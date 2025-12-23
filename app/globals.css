@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-quicksand);
+  --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
