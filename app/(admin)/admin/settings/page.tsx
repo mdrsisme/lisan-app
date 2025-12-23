@@ -1,216 +1,281 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  User, Lock, Bell, Globe, Camera, Save, 
-  ShieldCheck, Smartphone, Mail, Loader2 
+import { useEffect, useState } from "react";
+import {
+  Lock,
+  Save,
+  Loader2,
+  Shield,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
+import { api } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import Notification from "@/components/ui/Notification";
 
-export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState("profile");
+export default function SettingsPage() {
+  const router = useRouter();
+
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [toggles, setToggles] = useState({
-    twoFactor: true,
-    emailNotif: true,
-    pushNotif: false,
-    maintenanceMode: false
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const [passwords, setPasswords] = useState({
+    oldPassword: "",
+    newPassword: "",
   });
 
-  const handleSave = () => {
+  const [notification, setNotification] = useState<{
+    type: "success" | "error" | null;
+    message: string;
+  }>({ type: null, message: "" });
+
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) setUser(JSON.parse(stored));
+  }, []);
+
+  const handleChangePassword = async () => {
+    if (!passwords.oldPassword || !passwords.newPassword) {
+      setNotification({
+        type: "error",
+        message: "Semua kolom sandi wajib diisi.",
+      });
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1500);
+    try {
+      const res = await api.put("/users/password", passwords);
+      if (res.success) {
+        setNotification({
+          type: "success",
+          message: "Kata sandi berhasil diperbarui.",
+        });
+        setPasswords({ oldPassword: "", newPassword: "" });
+      } else {
+        throw new Error(res.message);
+      }
+    } catch (err: any) {
+      setNotification({
+        type: "error",
+        message: err.message || "Gagal memperbarui sandi.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const toggleSwitch = (key: keyof typeof toggles) => {
-    setToggles(prev => ({ ...prev, [key]: !prev[key] }));
+  const handleDeleteAccount = async () => {
+    setIsLoading(true);
+    try {
+      await api.delete("/users/account");
+      localStorage.clear();
+      router.push("/login");
+    } catch {
+      setNotification({
+        type: "error",
+        message: "Gagal menghapus akun.",
+      });
+      setIsDeleteOpen(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  const TabButton = ({ id, label, icon: Icon }: any) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-300 font-medium text-sm ${
-        activeTab === id 
-          ? "bg-[#6B4FD3] text-white shadow-lg shadow-purple-500/25" 
-          : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
-      }`}
-    >
-      <Icon size={18} />
-      {label}
-    </button>
-  );
 
   return (
-    <div className="space-y-8 animate-fade-in-up max-w-5xl mx-auto">
+    <div className="relative min-h-screen bg-[#f6f8ff] overflow-hidden flex items-center justify-center">
 
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-1">Pengaturan</h1>
-        <p className="text-slate-400 text-sm">Kelola preferensi akun dan konfigurasi sistem LISAN.</p>
+      {/* Notification */}
+      <Notification
+        type={notification.type}
+        message={notification.message}
+        onClose={() => setNotification({ type: null, message: "" })}
+      />
+
+      {/* Dreamy Orbs */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute -top-40 -left-40 w-[800px] h-[800px] bg-indigo-400/30 rounded-full blur-[140px]" />
+        <div className="absolute top-[20%] -right-40 w-[700px] h-[700px] bg-fuchsia-400/25 rounded-full blur-[140px]" />
+        <div className="absolute bottom-[-30%] left-[20%] w-[600px] h-[600px] bg-cyan-400/25 rounded-full blur-[140px]" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.35] mix-blend-soft-light" />
       </div>
 
-      <div className="flex flex-wrap gap-3 pb-2 border-b border-white/5">
-        <TabButton id="profile" label="Profil Saya" icon={User} />
-        <TabButton id="security" label="Keamanan" icon={Lock} />
-        <TabButton id="notifications" label="Notifikasi" icon={Bell} />
-        <TabButton id="system" label="Sistem" icon={Globe} />
-      </div>
+      {/* Card */}
+      <div className="relative z-10 w-full max-w-5xl h-[85vh] bg-white/70 backdrop-blur-2xl border border-white/60 rounded-[2.8rem] shadow-[0_40px_100px_rgba(0,0,0,0.12)] p-10 flex flex-col">
 
-      <div className="p-8 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-white/5 relative overflow-hidden">
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-black text-slate-800">Pengaturan</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Keamanan akun{" "}
+            <span className="font-semibold text-indigo-600">
+              {user?.full_name}
+            </span>
+          </p>
+        </div>
 
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#6ECFF6]/10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
 
-        {activeTab === "profile" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="flex items-center gap-6">
-              <div className="relative group cursor-pointer">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#6B4FD3] to-[#F062C0] p-[3px]">
-                   <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center overflow-hidden">
-                      <span className="text-3xl font-bold text-white">A</span>
-                   </div>
-                </div>
-                <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera className="text-white" size={24} />
+          {/* Sidebar */}
+          <aside className="bg-white/60 backdrop-blur-xl rounded-[2rem] border border-white/60 p-6 flex flex-col shadow-lg">
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold text-sm shadow-lg">
+              <Lock size={18} />
+              Keamanan
+            </div>
+
+            <div className="mt-auto p-4 rounded-2xl bg-blue-50 border border-blue-100">
+              <div className="flex gap-3">
+                <Shield className="text-blue-600 mt-0.5" size={18} />
+                <div>
+                  <p className="text-xs font-bold text-blue-900">
+                    Perlindungan Aktif
+                  </p>
+                  <p className="text-[11px] text-blue-700 mt-1 leading-relaxed">
+                    Sistem keamanan terenkripsi & terlindungi
+                  </p>
                 </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Foto Profil</h3>
-                <p className="text-slate-400 text-sm mb-3">Format yang didukung: JPG, PNG. Maks 2MB.</p>
-                <button className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-bold hover:bg-white/10 transition-colors">
-                  Unggah Foto Baru
+            </div>
+          </aside>
+
+          {/* Content */}
+          <main className="flex flex-col gap-10 justify-center">
+
+            {/* Change Password */}
+            <section className="bg-white/60 border border-white/60 rounded-3xl p-8 shadow-md">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
+                  <Lock size={22} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    Ubah Kata Sandi
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Demi keamanan, gunakan sandi kuat
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">
+                    Sandi Lama
+                  </label>
+                  <input
+                    type="password"
+                    value={passwords.oldPassword}
+                    onChange={(e) =>
+                      setPasswords({ ...passwords, oldPassword: e.target.value })
+                    }
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">
+                    Sandi Baru
+                  </label>
+                  <input
+                    type="password"
+                    value={passwords.newPassword}
+                    onChange={(e) =>
+                      setPasswords({ ...passwords, newPassword: e.target.value })
+                    }
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm font-semibold"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={handleChangePassword}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-indigo-600 transition-all disabled:opacity-70"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="animate-spin" size={14} />
+                    ) : (
+                      <Save size={14} />
+                    )}
+                    Simpan
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* Danger Zone */}
+            <section className="relative overflow-hidden rounded-3xl border border-red-200 bg-gradient-to-br from-red-50 to-rose-50 p-8 shadow-lg">
+
+              <div className="absolute -top-24 -right-24 w-[300px] h-[300px] bg-red-300/30 rounded-full blur-[100px]" />
+
+              <div className="relative z-10 flex items-start gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center">
+                  <Trash2 size={24} />
+                </div>
+
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold text-red-600">
+                    Zona Berbahaya
+                  </h4>
+                  <p className="text-sm text-red-500 mt-1 max-w-md">
+                    Menghapus akun akan menghilangkan seluruh data secara
+                    permanen dan tidak dapat dipulihkan.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setIsDeleteOpen(true)}
+                  className="shrink-0 px-5 py-2.5 rounded-xl bg-red-500 text-white font-bold text-xs hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all"
+                >
+                  Hapus Akun
                 </button>
               </div>
-            </div>
+            </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-400">Nama Lengkap</label>
-                <input type="text" defaultValue="Admin LISAN" className="w-full h-12 px-4 rounded-xl bg-black/20 border border-white/10 text-white focus:border-[#6B4FD3] focus:ring-1 focus:ring-[#6B4FD3] outline-none transition-all" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-400">Username</label>
-                <input type="text" defaultValue="admin_lisan" className="w-full h-12 px-4 rounded-xl bg-black/20 border border-white/10 text-white focus:border-[#6B4FD3] focus:ring-1 focus:ring-[#6B4FD3] outline-none transition-all" />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-semibold text-slate-400">Email</label>
-                <input type="email" defaultValue="admin@lisan.app" className="w-full h-12 px-4 rounded-xl bg-black/20 border border-white/10 text-white focus:border-[#6B4FD3] focus:ring-1 focus:ring-[#6B4FD3] outline-none transition-all" />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-semibold text-slate-400">Bio Singkat</label>
-                <textarea rows={3} defaultValue="Administrator sistem LISAN." className="w-full p-4 rounded-xl bg-black/20 border border-white/10 text-white focus:border-[#6B4FD3] focus:ring-1 focus:ring-[#6B4FD3] outline-none transition-all resize-none" />
-              </div>
-            </div>
-          </div>
-        )}
+          </main>
+        </div>
+      </div>
 
-        {activeTab === "security" && (
-          <div className="space-y-8 animate-fade-in">
-            <div>
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <ShieldCheck size={20} className="text-[#6ECFF6]" />
-                Ubah Kata Sandi
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl bg-black/20 border border-white/5">
-                <div className="space-y-2">
-                   <label className="text-sm font-semibold text-slate-400">Kata Sandi Saat Ini</label>
-                   <input type="password" placeholder="••••••••" className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#6B4FD3] outline-none" />
-                </div>
-                <div className="space-y-2">
-                   <label className="text-sm font-semibold text-slate-400">Kata Sandi Baru</label>
-                   <input type="password" placeholder="••••••••" className="w-full h-12 px-4 rounded-xl bg-white/5 border border-white/10 text-white focus:border-[#6B4FD3] outline-none" />
-                </div>
-              </div>
+      {/* Delete Modal */}
+      {isDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => setIsDeleteOpen(false)}
+          />
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-3xl p-8 w-full max-w-sm shadow-2xl border border-white text-center">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-red-100 flex items-center justify-center">
+              <AlertTriangle className="text-red-500" size={32} />
             </div>
-
-            <div className="flex items-center justify-between p-6 rounded-2xl bg-black/20 border border-white/5">
-              <div className="max-w-md">
-                <h4 className="text-white font-bold mb-1">Autentikasi Dua Faktor (2FA)</h4>
-                <p className="text-slate-400 text-sm">Tambahkan lapisan keamanan ekstra dengan kode verifikasi via email.</p>
-              </div>
-              <button 
-                onClick={() => toggleSwitch('twoFactor')}
-                className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${toggles.twoFactor ? 'bg-[#6ECFF6]' : 'bg-slate-700'}`}
+            <h3 className="text-xl font-bold text-slate-800 mb-2">
+              Hapus Akun?
+            </h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsDeleteOpen(false)}
+                className="flex-1 h-11 rounded-xl border border-slate-200 font-bold text-sm"
               >
-                <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-300 ${toggles.twoFactor ? 'translate-x-6' : 'translate-x-0'}`} />
+                Batal
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isLoading}
+                className="flex-1 h-11 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  "Hapus"
+                )}
               </button>
             </div>
           </div>
-        )}
-
-        {activeTab === "notifications" && (
-          <div className="space-y-6 animate-fade-in">
-            <h3 className="text-lg font-bold text-white mb-2">Preferensi Notifikasi</h3>
-            
-            <div className="space-y-4">
-              {[
-                { key: 'emailNotif', label: 'Notifikasi Email', desc: 'Terima pembaruan penting via email.', icon: Mail },
-                { key: 'pushNotif', label: 'Push Notification', desc: 'Notifikasi popup di browser dashboard.', icon: Smartphone }
-              ].map((item: any) => (
-                <div key={item.key} className="flex items-center justify-between p-5 rounded-2xl bg-black/20 border border-white/5 hover:bg-black/30 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-300">
-                      <item.icon size={20} />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-bold text-sm">{item.label}</h4>
-                      <p className="text-slate-400 text-xs">{item.desc}</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => toggleSwitch(item.key)}
-                    className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${toggles[item.key as keyof typeof toggles] ? 'bg-[#F062C0]' : 'bg-slate-700'}`}
-                  >
-                    <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-300 ${toggles[item.key as keyof typeof toggles] ? 'translate-x-6' : 'translate-x-0'}`} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {activeTab === "system" && (
-          <div className="space-y-8 animate-fade-in">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                   <label className="text-sm font-semibold text-slate-400">Bahasa Dashboard</label>
-                   <select className="w-full h-12 px-4 rounded-xl bg-black/20 border border-white/10 text-white focus:border-[#6B4FD3] outline-none appearance-none cursor-pointer">
-                      <option className="bg-slate-900">Bahasa Indonesia</option>
-                      <option className="bg-slate-900">English (US)</option>
-                   </select>
-                </div>
-                <div className="space-y-2">
-                   <label className="text-sm font-semibold text-slate-400">Zona Waktu</label>
-                   <select className="w-full h-12 px-4 rounded-xl bg-black/20 border border-white/10 text-white focus:border-[#6B4FD3] outline-none appearance-none cursor-pointer">
-                      <option className="bg-slate-900">(GMT+07:00) Jakarta, Bangkok</option>
-                   </select>
-                </div>
-             </div>
-
-             <div className="p-6 rounded-2xl bg-red-500/10 border border-red-500/20 flex justify-between items-center">
-                <div>
-                   <h4 className="text-red-400 font-bold mb-1">Mode Perbaikan (Maintenance)</h4>
-                   <p className="text-red-300/60 text-xs max-w-sm">
-                      Jika diaktifkan, hanya Admin yang bisa mengakses sistem. Pengguna lain akan melihat halaman Maintenance.
-                   </p>
-                </div>
-                <button 
-                  onClick={() => toggleSwitch('maintenanceMode')}
-                  className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 ${toggles.maintenanceMode ? 'bg-red-500' : 'bg-slate-700'}`}
-                >
-                  <div className={`w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-300 ${toggles.maintenanceMode ? 'translate-x-6' : 'translate-x-0'}`} />
-                </button>
-             </div>
-          </div>
-        )}
-        <div className="mt-10 pt-6 border-t border-white/10 flex justify-end">
-          <button 
-            onClick={handleSave}
-            disabled={isLoading}
-            className="px-8 py-3 rounded-xl bg-gradient-to-r from-[#6B4FD3] to-[#F062C0] text-white font-bold hover:shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-70"
-          >
-            {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-            Simpan Perubahan
-          </button>
         </div>
-
-      </div>
+      )}
     </div>
   );
 }

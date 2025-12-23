@@ -14,7 +14,6 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  // State untuk Data Form
   const [formData, setFormData] = useState({ 
     full_name: "", 
     username: "", 
@@ -22,7 +21,6 @@ export default function RegisterPage() {
     password: "" 
   });
 
-  // State untuk Notifikasi
   const [notification, setNotification] = useState<{ type: "success" | "error" | null, message: string }>({
     type: null,
     message: ""
@@ -42,8 +40,7 @@ export default function RegisterPage() {
       await api.post("/auth/register", payload);
       
       setNotification({ type: "success", message: "Pendaftaran berhasil! Mengalihkan..." });
-      
-      // Delay sedikit agar notifikasi terbaca sebelum pindah halaman
+
       setTimeout(() => {
         router.push(`/confirmation?email=${encodeURIComponent(formData.email)}`);
       }, 1500);
@@ -58,17 +55,12 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen w-full flex bg-white overflow-hidden">
       
-      {/* --- KOMPONEN NOTIFIKASI --- */}
       <Notification 
         type={notification.type} 
         message={notification.message} 
         onClose={() => setNotification({ type: null, message: "" })} 
       />
-
-      {/* --- BAGIAN KIRI: FORM GLASSMORPHISM --- */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 relative z-10">
-        
-        {/* Tombol Kembali dengan Border Keren */}
         <Link 
           href="/" 
           className="absolute top-8 left-8 h-10 px-5 rounded-full border border-slate-200 text-slate-600 font-semibold text-sm flex items-center gap-2 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-900 transition-all duration-300 group"
@@ -88,8 +80,6 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            
-            {/* Input Full Name */}
             <div className="group">
               <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Nama Lengkap</label>
               <div className="relative">
@@ -106,8 +96,6 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
-
-            {/* Input Username */}
             <div className="group">
               <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Username</label>
               <div className="relative">
@@ -124,8 +112,6 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
-
-            {/* Input Email */}
             <div className="group">
               <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Email</label>
               <div className="relative">
@@ -142,8 +128,6 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
-
-            {/* Input Password dengan Toggle */}
             <div className="group">
               <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Kata Sandi</label>
               <div className="relative">
@@ -158,8 +142,6 @@ export default function RegisterPage() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
-                
-                {/* Tombol Mata (Show/Hide) */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -188,20 +170,13 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
-
-      {/* --- BAGIAN KANAN: LIQUID & AESTHETIC --- */}
       <div className="hidden lg:flex w-1/2 bg-[#0F0F16] relative overflow-hidden items-center justify-center p-16 text-center">
-        
-        {/* Liquid Blobs (Efek Cair) */}
         <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-[#6B4FD3] to-[#4c1d95] rounded-full blur-[100px] opacity-40 animate-pulse-slow" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-tr from-[#F062C0] to-[#be185d] rounded-full blur-[120px] opacity-30" />
-        
-        {/* Glass Overlay di Kanan (Opsional, untuk tekstur) */}
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
 
         <div className="relative z-10 max-w-xl">
           <div className="mb-8 inline-block p-4 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
-             {/* Ikon Dekoratif Abstrak */}
              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#6B4FD3] to-[#F062C0] opacity-90 blur-xl absolute top-4 left-4" />
              <div className="relative w-16 h-16 flex items-center justify-center">
                 <span className="text-4xl">🤟</span>

@@ -17,7 +17,7 @@ export default function Notification({ type, message, onClose }: NotificationPro
       setIsVisible(true);
       const timer = setTimeout(() => {
         setIsVisible(false);
-        setTimeout(onClose, 300); // Tunggu animasi selesai baru unmount
+        setTimeout(onClose, 300);
       }, 5000);
       return () => clearTimeout(timer);
     }

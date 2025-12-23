@@ -1,156 +1,174 @@
 "use client";
 
-import { 
-  Users, UserCheck, MessageSquare, AlertCircle, 
-  ArrowUpRight, ArrowDownRight, MoreHorizontal 
+import AdminLayout from "@/components/layouts/AdminLayout";
+import PageHeader from "@/components/ui/PageHeader";
+import { useEffect, useState } from "react";
+import {
+  Users,
+  Zap,
+  Sparkles,
+  ShieldCheck,
+  TrendingUp,
+  LayoutGrid,
+  Activity,
 } from "lucide-react";
+import { api } from "@/lib/api";
 
-export default function AdminDashboard() {
+type StatItem = {
+  key: string;
+  label: string;
+  value: string | number;
+  icon: any;
+  gradient: string;
+  shadow: string;
+  trend: string;
+  bgIcon: string;
+};
 
-  const stats = [
-    {
-      label: "Total Pengguna",
-      value: "12,450",
-      change: "+12%",
-      isPositive: true,
-      icon: Users,
-      color: "from-[#6ECFF6] to-[#4AA3DF]"
-    },
-    {
-      label: "Pengguna Aktif",
-      value: "8,210",
-      change: "+5%",
-      isPositive: true,
-      icon: UserCheck,
-      color: "from-[#6B4FD3] to-[#5b21b6]"
-    },
-    {
-      label: "FAQ Dibaca",
-      value: "45,320",
-      change: "+28%",
-      isPositive: true,
-      icon: MessageSquare,
-      color: "from-[#F062C0] to-[#be185d]"
-    },
-    {
-      label: "Laporan Masalah",
-      value: "12",
-      change: "-2%",
-      isPositive: false,
-      icon: AlertCircle,
-      color: "from-orange-400 to-red-500"
+function DashboardContent() {
+  const [stats, setStats] = useState<StatItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState("Admin");
+
+  useEffect(() => {
+    document.title = "Dashboard - LISAN";
+  }, []);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setUsername(user.full_name || user.username || "Admin");
     }
-  ];
+  }, []);
 
-  const recentUsers = [
-    { name: "Andi Saputra", email: "andi@gmail.com", role: "User", status: "Active", date: "23 Des 2025" },
-    { name: "Siti Aminah", email: "siti.am@yahoo.com", role: "Premium", status: "Active", date: "23 Des 2025" },
-    { name: "Budi Santoso", email: "budi.san@gmail.com", role: "User", status: "Pending", date: "22 Des 2025" },
-    { name: "Citra Kirana", email: "citra@lisan.app", role: "Admin", status: "Active", date: "22 Des 2025" },
-    { name: "Eko Prasetyo", email: "eko.p@gmail.com", role: "User", status: "Banned", date: "21 Des 2025" },
-  ];
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get("/users/stats");
+        if (!res.success || !res.data) throw new Error();
+
+        const data = res.data;
+
+        setStats([
+          {
+            key: "users",
+            label: "Total Pengguna",
+            value: data.total_users,
+            icon: Users,
+            gradient: "from-indigo-500 to-violet-500",
+            shadow: "shadow-indigo-500/20",
+            trend: "+12% minggu ini",
+            bgIcon: "bg-indigo-50 text-indigo-500"
+          },
+          {
+            key: "active",
+            label: "Pengguna Aktif",
+            value: data.active_users,
+            icon: Zap,
+            gradient: "from-amber-400 to-orange-500",
+            shadow: "shadow-amber-500/20",
+            trend: "Sedang Online",
+            bgIcon: "bg-amber-50 text-amber-500"
+          },
+          {
+            key: "premium",
+            label: "Premium",
+            value: data.premium_users,
+            icon: Sparkles,
+            gradient: "from-pink-500 to-rose-500",
+            shadow: "shadow-pink-500/20",
+            trend: "Pertumbuhan Stabil",
+            bgIcon: "bg-pink-50 text-pink-500"
+          },
+          {
+            key: "verified",
+            label: "Terverifikasi",
+            value: data.verified_users,
+            icon: ShieldCheck,
+            gradient: "from-emerald-500 to-teal-500",
+            shadow: "shadow-emerald-500/20",
+            trend: "Keamanan Tinggi",
+            bgIcon: "bg-emerald-50 text-emerald-500"
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
+    <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      <PageHeader
+          theme="indigo"
+          title="Dashboard"
+          highlight="Utama"
+          description={`Selamat datang kembali, ${username.split(' ')[0]}. Berikut ringkasan aktivitas sistem hari ini.`}
+          breadcrumbs={[
+            { label: "Dashboard", active: true, icon: LayoutGrid },
+          ]}
+        />
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Dashboard Ikhtisar</h1>
-          <p className="text-slate-400 text-sm">Pantau pertumbuhan ekosistem LISAN secara real-time.</p>
-        </div>
+      <div className="space-y-5">
+        <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-400 pl-1 flex items-center gap-2">
+           <Activity size={16} /> Metrik Utama
+        </h3>
 
-        <div className="flex gap-3">
-          <button className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors">
-            Unduh Laporan
-          </button>
-          <button className="px-5 py-2.5 rounded-xl bg-[#6B4FD3] text-white text-sm font-bold shadow-lg shadow-purple-500/25 hover:bg-[#5b21b6] transition-all">
-            + Buat Pengumuman
-          </button>
-        </div>
-      </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-[180px] rounded-[2rem] bg-slate-100 animate-pulse"
+                />
+              ))
+            : stats.map((stat) => (
+                <div
+                  key={stat.key}
+                  className="group relative p-6 rounded-[2rem] bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                >
+                  <div className={`absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform duration-500`}>
+                     <stat.icon size={80} className={stat.bgIcon.split(' ')[1]} /> 
+                  </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {stats.map((stat, idx) => (
-          <div 
-            key={idx} 
-            className="group relative p-6 rounded-3xl bg-slate-900/40 backdrop-blur-md border border-white/5 hover:border-white/10 transition-all duration-300 hover:-translate-y-1"
-          >
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500 rounded-3xl`} />
-            
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div className={`p-3 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg`}>
-                <stat.icon size={22} className="text-white" />
-              </div>
-              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${stat.isPositive ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                {stat.isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                {stat.change}
-              </div>
-            </div>
-            
-            <div className="relative z-10">
-              <h3 className="text-slate-400 text-sm font-medium mb-1">{stat.label}</h3>
-              <p className="text-3xl font-black text-white">{stat.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-3xl bg-slate-900/40 backdrop-blur-md border border-white/5 overflow-hidden">
-        <div className="p-6 border-b border-white/5 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-white">Pengguna Terbaru</h2>
-          <button className="text-sm text-[#6ECFF6] hover:text-[#6B4FD3] transition-colors font-medium">
-            Lihat Semua
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-white/5 border-b border-white/5 text-slate-400 text-xs uppercase tracking-wider">
-                <th className="p-5 font-semibold">Nama Pengguna</th>
-                <th className="p-5 font-semibold">Status</th>
-                <th className="p-5 font-semibold">Role</th>
-                <th className="p-5 font-semibold">Tanggal Daftar</th>
-                <th className="p-5 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {recentUsers.map((user, idx) => (
-                <tr key={idx} className="group hover:bg-white/[0.02] transition-colors">
-                  <td className="p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-bold border border-white/5">
-                        {user.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-white group-hover:text-[#6ECFF6] transition-colors">{user.name}</p>
-                        <p className="text-xs text-slate-500">{user.email}</p>
-                      </div>
+                  <div className="relative z-10 flex flex-col justify-between h-full min-h-[140px]">
+                    <div className="flex justify-between items-start">
+                         <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center text-white shadow-lg ${stat.shadow}`}>
+                            <stat.icon size={26} />
+                         </div>
                     </div>
-                  </td>
-                  <td className="p-5">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                      user.status === "Active" ? "bg-green-500/10 text-green-400 border border-green-500/20" :
-                      user.status === "Pending" ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" :
-                      "bg-red-500/10 text-red-400 border border-red-500/20"
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="p-5 text-sm text-slate-300">{user.role}</td>
-                  <td className="p-5 text-sm text-slate-500">{user.date}</td>
-                  <td className="p-5 text-right">
-                    <button className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition-colors">
-                      <MoreHorizontal size={18} />
-                    </button>
-                  </td>
-                </tr>
+                    
+                    <div className="mt-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                            {stat.label}
+                        </p>
+                        <div className="flex items-end gap-3">
+                            <h4 className="text-4xl font-black text-slate-900 leading-none tracking-tight">
+                                {stat.value}
+                            </h4>
+                        </div>
+                         <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-50 border border-slate-100">
+                             <TrendingUp size={12} className="text-emerald-500" />
+                             <span className="text-[10px] font-bold text-slate-500">{stat.trend}</span>
+                         </div>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
         </div>
       </div>
-
     </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <AdminLayout>
+      <DashboardContent />
+    </AdminLayout>
   );
 }
