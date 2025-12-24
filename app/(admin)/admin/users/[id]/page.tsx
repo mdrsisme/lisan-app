@@ -38,11 +38,16 @@ export default function UserDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
 
+  const oceanGradient = "bg-gradient-to-br from-[#3b82f6] to-[#10b981]";
+  const textOcean = "text-[#06b6d4]";
+  const bgLight = "bg-[#ecfeff]";
+  const borderFocus = "border-[#06b6d4]/30";
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await api.get(`/users/profile/${userId}`); 
-        if (res.success) {
+        const res = await api.get(`/users/${userId}`); 
+        if (res.success || res.data) {
           setUser(res.data);
         }
       } catch (error) {
@@ -66,11 +71,11 @@ export default function UserDetailPage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="space-y-6 p-6">
-           <div className="h-24 w-full bg-slate-200 rounded-xl" />
+        <div className="space-y-6 p-6 animate-pulse">
+           <div className="h-24 w-full bg-slate-100 rounded-[2rem]" />
            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-4 h-96 bg-slate-200 rounded-2xl" />
-              <div className="lg:col-span-8 h-96 bg-slate-200 rounded-2xl" />
+              <div className="lg:col-span-4 h-96 bg-slate-100 rounded-[2rem]" />
+              <div className="lg:col-span-8 h-96 bg-slate-100 rounded-[2rem]" />
            </div>
         </div>
       </AdminLayout>
@@ -81,15 +86,16 @@ export default function UserDetailPage() {
     return (
       <AdminLayout>
         <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-          <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mb-4">
-             <UserIcon size={32} className="text-rose-400" />
+          <div className={`w-24 h-24 ${bgLight} rounded-[2rem] flex items-center justify-center mb-6`}>
+             <UserIcon size={40} className={textOcean} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">User Tidak Ditemukan</h2>
+          <h2 className="text-2xl font-black text-slate-800 mb-2">User Tidak Ditemukan</h2>
+          <p className="text-slate-400 mb-8">Kami tidak dapat menemukan data user dengan ID tersebut.</p>
           <button 
             onClick={() => router.push('/admin/users')} 
-            className="px-6 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800"
+            className={`px-8 py-3 rounded-xl ${oceanGradient} text-white font-bold shadow-lg hover:-translate-y-1 transition-all`}
           >
-            Kembali
+            Kembali ke List
           </button>
         </div>
       </AdminLayout>
@@ -98,7 +104,7 @@ export default function UserDetailPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         <PageHeader
           theme={themeColors.ocean}
@@ -108,145 +114,155 @@ export default function UserDetailPage() {
           breadcrumbs={[
             { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
             { label: "Pengguna", href: "/admin/users", icon: Users },
-            { label: "Database", href: "/admin/users/list", icon: List },
+            { label: "Database", href: "/admin/users", icon: List },
             { label: user.username, active: true, icon: UserIcon },
           ]}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-           
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
            <div className="lg:col-span-4 flex flex-col gap-6">
-              <div className="relative bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 text-center group">
-                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-rose-50 to-white z-0" />
+              <div className="relative bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden p-8 text-center group hover:border-[#06b6d4]/30 transition-all duration-300">
+
+                 <div className={`absolute top-0 left-0 w-full h-36 ${oceanGradient} opacity-10 z-0`} />
+                 <div className="absolute top-0 left-0 w-full h-36 bg-[url('/noise.png')] opacity-20 z-0 mix-blend-overlay" />
                  
-                 <div className="relative z-10 flex flex-col items-center">
-                    <div className="relative">
-                       <div className="w-32 h-32 rounded-full p-1.5 bg-white shadow-xl shadow-rose-100 mb-4 ring-1 ring-slate-100">
-                          <img 
-                            src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.full_name}&background=random`} 
-                            alt={user.username} 
-                            className="w-full h-full rounded-full object-cover"
-                          />
+                 <div className="relative z-10 flex flex-col items-center mt-8">
+                    <div className="relative group/avatar">
+                       <div className="w-36 h-36 rounded-[2rem] p-1.5 bg-white shadow-xl shadow-[#06b6d4]/20 mb-5 ring-1 ring-slate-100 transition-transform duration-300 group-hover/avatar:scale-105">
+                          <div className="w-full h-full rounded-[1.7rem] overflow-hidden bg-slate-50 flex items-center justify-center">
+                            {user.avatar_url ? (
+                                <img 
+                                    src={user.avatar_url} 
+                                    alt={user.username} 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className={`text-4xl font-black ${textOcean}`}>
+                                    {user.full_name?.charAt(0).toUpperCase() || "U"}
+                                </div>
+                            )}
+                          </div>
                        </div>
                        
-                       <div className={`absolute bottom-4 right-1 text-white p-1 rounded-full ring-4 ring-white ${user.is_verified ? "bg-emerald-500" : "bg-rose-500"}`} title={user.is_verified ? "Terverifikasi" : "Belum Verifikasi"}>
-                          <Shield size={14} fill="currentColor" />
+                       <div className={`absolute bottom-6 right-0 text-white p-1.5 rounded-xl ring-4 ring-white shadow-lg ${user.is_verified ? "bg-[#10b981]" : "bg-slate-400"}`} title={user.is_verified ? "Terverifikasi" : "Belum Verifikasi"}>
+                          <Shield size={16} fill="currentColor" />
                        </div>
                     </div>
 
                     <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-1">{user.full_name}</h2>
-                    <p className="text-slate-500 font-medium text-sm">@{user.username}</p>
+                    <p className={`font-bold ${textOcean} text-sm bg-[#ecfeff] px-3 py-1 rounded-lg`}>@{user.username}</p>
                     
-                    <div className="flex items-center justify-center gap-1.5 mt-2 mb-5 text-slate-400 text-xs font-medium bg-slate-50 px-3 py-1 rounded-full border border-slate-100 w-fit">
+                    <div className="flex items-center justify-center gap-1.5 mt-4 mb-6 text-slate-400 text-xs font-bold uppercase tracking-wider">
                         <Calendar size={12} />
-                        <span>Bergabung {format(new Date(user.created_at), "dd MMM yyyy", { locale: idLocale })}</span>
+                        <span>Join {format(new Date(user.created_at), "dd MMM yyyy", { locale: idLocale })}</span>
                     </div>
 
-                    <div className="flex gap-2 justify-center mb-2">
-                       <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    <div className="flex flex-wrap gap-2 justify-center w-full">
+                       <span className={`px-4 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-wide border ${
                           user.role === 'admin' 
-                            ? 'bg-slate-900 text-white border-slate-900' 
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-md shadow-slate-900/20' 
+                            : 'bg-white text-slate-500 border-slate-200 shadow-sm'
                        }`}>
                           {user.role}
                        </span>
                        {user.is_premium && (
-                          <span className="px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                             <Sparkles size={10} fill="currentColor" /> Premium
+                          <span className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-extrabold uppercase tracking-wide flex items-center gap-1 shadow-md shadow-orange-500/20">
+                             <Sparkles size={12} fill="currentColor" /> Premium
                           </span>
                        )}
                     </div>
                  </div>
               </div>
 
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                     <Award size={14} /> Statistik Game
+              <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 hover:border-[#06b6d4]/30 transition-all">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <Award size={16} className="text-amber-500" /> Statistik Game
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                     <div className="bg-rose-50 rounded-2xl p-4 border border-rose-100 text-center">
-                        <div className="text-rose-500 mb-1 flex justify-center"><Zap size={20} fill="currentColor" /></div>
-                        <div className="text-2xl font-black text-slate-800">{user.level}</div>
-                        <div className="text-[10px] font-bold text-rose-400 uppercase">Level</div>
+                     <div className={`bg-[#ecfeff] rounded-2xl p-5 border border-[#cffafe] text-center group hover:bg-[#cffafe] transition-colors`}>
+                        <div className={`mb-2 flex justify-center ${textOcean}`}><Zap size={24} fill="currentColor" /></div>
+                        <div className="text-3xl font-black text-slate-800 mb-1">{user.level}</div>
+                        <div className={`text-[10px] font-bold ${textOcean} uppercase tracking-wider`}>Level</div>
                      </div>
-                     <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100 text-center">
-                        <div className="text-amber-500 mb-1 flex justify-center"><Award size={20} /></div>
-                        <div className="text-2xl font-black text-slate-800">{user.xp}</div>
-                        <div className="text-[10px] font-bold text-amber-400 uppercase">XP Points</div>
+                     <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100 text-center group hover:bg-amber-100 transition-colors">
+                        <div className="text-amber-500 mb-2 flex justify-center"><Award size={24} /></div>
+                        <div className="text-3xl font-black text-slate-800 mb-1">{user.xp}</div>
+                        <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">XP Points</div>
                      </div>
                   </div>
               </div>
            </div>
 
            <div className="lg:col-span-8 flex flex-col gap-6 h-full">
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-1">
-                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                       <Fingerprint size={16} className="text-rose-500" /> Informasi Pribadi
+              <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 flex-1 hover:border-[#06b6d4]/30 transition-all">
+                 <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wide">
+                       <Fingerprint size={18} className={textOcean} /> Informasi Pribadi
                     </h3>
-                    <button onClick={() => window.location.reload()} className="p-2 hover:bg-slate-100 rounded-full text-slate-400">
-                       <RefreshCw size={14} />
+                    <button onClick={() => window.location.reload()} className="p-2.5 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-[#06b6d4] transition-all">
+                       <RefreshCw size={16} />
                     </button>
                  </div>
 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-rose-200 group">
-                       <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                          <Mail size={12} /> Email
+                    <div className={`space-y-2 p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 hover:border-[#06b6d4]/50 hover:bg-[#ecfeff]/30 transition-all group`}>
+                       <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
+                          <Mail size={12} /> Email Address
                        </label>
                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-700 text-sm truncate pr-2">{user.email}</span>
-                          <button onClick={handleCopyEmail} className="text-slate-300 hover:text-rose-500">
-                             {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                          <span className="font-bold text-slate-700 text-sm truncate pr-4">{user.email}</span>
+                          <button onClick={handleCopyEmail} className={`text-slate-300 hover:${textOcean} transition-colors`}>
+                             {isCopied ? <Check size={16} /> : <Copy size={16} />}
                           </button>
                        </div>
                     </div>
 
-                    <div className="space-y-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                       <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                          <Calendar size={12} /> Bergabung
+                    <div className="space-y-2 p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 hover:bg-white transition-all">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
+                          <Calendar size={12} /> Tanggal Bergabung
                        </label>
                        <div className="font-bold text-slate-700 text-sm">
                           {format(new Date(user.created_at), "dd MMMM yyyy", { locale: idLocale })}
                        </div>
                     </div>
 
-                    <div className="space-y-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                       <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                          <RefreshCw size={12} /> Update Terakhir
+                    <div className="space-y-2 p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 hover:bg-white transition-all">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
+                          <RefreshCw size={12} /> Terakhir Diupdate
                        </label>
                        <div className="font-bold text-slate-700 text-sm">
                           {format(new Date(user.updated_at), "dd MMM yyyy, HH:mm", { locale: idLocale })}
                        </div>
                     </div>
 
-                    <div className="space-y-1.5 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                       <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                          <Hash size={12} /> UUID
+                    <div className="space-y-2 p-5 rounded-[1.5rem] bg-slate-50 border border-slate-100 hover:bg-white transition-all">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
+                          <Hash size={12} /> UUID System
                        </label>
-                       <div className="font-mono font-bold text-slate-500 text-xs truncate">
+                       <div className="font-mono font-bold text-slate-500 text-xs truncate select-all">
                           {user.id}
                        </div>
                     </div>
                  </div>
               </div>
 
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
-                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-6">
-                    <Lock size={16} className="text-rose-500" /> Keamanan Akun
+              <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 hover:border-[#06b6d4]/30 transition-all">
+                 <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 mb-6 uppercase tracking-wide">
+                    <Lock size={18} className="text-rose-500" /> Keamanan Akun
                  </h3>
                  
-                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="flex items-center gap-4">
-                       <div className="p-3 bg-white rounded-xl shadow-sm">
-                          <Lock size={20} className="text-slate-400" />
+                 <div className="flex items-center justify-between p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100">
+                    <div className="flex items-center gap-5">
+                       <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400">
+                          <Lock size={20} />
                        </div>
                        <div>
-                          <p className="text-xs font-bold text-slate-700">Kata Sandi</p>
-                          <p className="text-[10px] text-slate-400">Terakhir diubah 30 hari yang lalu</p>
+                          <p className="text-sm font-bold text-slate-800">Kata Sandi</p>
+                          <p className="text-xs text-slate-400 font-medium mt-0.5">Terkahir diubah: -</p>
                        </div>
                     </div>
-                    <button className="px-4 py-2 bg-white border border-slate-200 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed opacity-70">
+                    <button className="px-5 py-2.5 bg-white border border-slate-200 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed opacity-60 shadow-sm">
                        Reset Password
                     </button>
                  </div>

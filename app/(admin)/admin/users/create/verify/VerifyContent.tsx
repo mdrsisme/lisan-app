@@ -92,7 +92,6 @@ export default function VerifyContent() {
   const bgLight = "bg-[#ecfeff]";
 
   return (
-    <AdminLayout>
       <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         <PageHeader
@@ -245,6 +244,5 @@ export default function VerifyContent() {
         </div>
 
       </div>
-    </AdminLayout>
   );
 }

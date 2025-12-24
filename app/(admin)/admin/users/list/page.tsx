@@ -48,13 +48,9 @@ export default function UserListPage() {
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
 
-  // --- OCEAN THEME CONSTANTS ---
-  // Kita gunakan class-class ini agar konsisten dengan tema Ocean yang diminta
-  const accentColor = "text-[#10b981]"; // Emerald green untuk aksen teks utama
-  const hoverColor = "hover:text-[#06b6d4]"; // Cyan untuk hover
-  const gradientBg = "bg-gradient-to-tl from-[#3b82f6] via-[#06b6d4] to-[#10b981]"; // Gradient Ocean
-  const focusRing = "focus:ring-[#06b6d4]/20"; // Ring warna Cyan soft
-  const activeBorder = "border-[#06b6d4]";
+  const hoverColor = "hover:text-[#06b6d4]";
+  const gradientBg = "bg-gradient-to-tl from-[#3b82f6] via-[#06b6d4] to-[#10b981]";
+  const focusRing = "focus:ring-[#06b6d4]/20";
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -178,7 +174,8 @@ export default function UserListPage() {
                   ))
                 ) : users.length > 0 ? (
                   users.map((user) => (
-                    <tr key={user.id} className="group hover:bg-[#ecfeff]/50 transition-all duration-200"> {/* Hover bg cyan sangat muda */}
+                    // PERBAIKAN: Komentar dihapus dari dalam tag <tr>
+                    <tr key={user.id} className="group hover:bg-[#ecfeff]/50 transition-all duration-200">
                       <td className="p-6 pl-8">
                         <div className="flex items-center gap-5">
                           <div className="relative shrink-0">

@@ -55,7 +55,7 @@ const menuGroups = [
     label: "Ekstra",
     theme: themeColors.ocean,
     items: [
-      { name: "Dokumentasi", href: "/documents", icon: Book },
+      { name: "Dokumentasi", href: "/admin/documents", icon: Book },
     ],
   },
 ];
