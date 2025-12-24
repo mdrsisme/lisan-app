@@ -194,7 +194,7 @@ export default function DocumentsPage() {
       </div>
 
       <a
-        href="/api-documentations"
+        href="/admin/api-documentations"
         className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-6 h-14 rounded-full
                    bg-gradient-to-r from-cyan-500 to-sky-500
                    text-white font-black shadow-xl shadow-cyan-500/30
