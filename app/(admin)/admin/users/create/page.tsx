@@ -2,7 +2,8 @@
 
 import AdminLayout from "@/components/layouts/AdminLayout";
 import PageHeader from "@/components/ui/PageHeader";
-import Notification from "@/components/ui/Notification"; // Pastikan path import sesuai
+import Notification from "@/components/ui/Notification";
+import { themeColors } from "@/lib/color";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -28,7 +29,7 @@ export default function CreateUserPage() {
     username: "",
     email: "",
     password: "",
-    role: "user" // default
+    role: "user"
   });
 
   const generatePassword = () => {
@@ -44,11 +45,10 @@ export default function CreateUserPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Reset notifikasi sebentar agar animasi bisa re-trigger jika tipe sama
     setNotification({ type: null, message: "" });
 
     try {
-      const res = await api.post("/users", formData);
+      const res = await api.post("/auth/register", formData);
 
       if (res.success) {
         setNotification({ type: 'success', message: `User ${formData.username} berhasil dibuat!` });
@@ -69,13 +69,13 @@ export default function CreateUserPage() {
     <AdminLayout>
       <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <PageHeader
-          theme="rose"
+          theme={themeColors.ocean}
           title="Registrasi"
           highlight="Pengguna Baru"
           description="Tambahkan anggota baru secara manual ke dalam ekosistem."
           breadcrumbs={[
             { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
-            { label: "Komunitas", href: "/admin/users", icon: Users },
+            { label: "Pengguna", href: "/admin/users", icon: Users },
             { label: "Buat Pengguna", active: true, icon: UserPlus },
           ]}
         />

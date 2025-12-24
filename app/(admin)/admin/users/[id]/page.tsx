@@ -12,6 +12,7 @@ import {
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { themeColors } from "@/lib/color";
 
 type UserDetail = {
   id: string;
@@ -100,13 +101,13 @@ export default function UserDetailPage() {
       <div className="space-y-6">
         
         <PageHeader
-          theme="rose"
+          theme={themeColors.ocean}
           title="Detail Akun"
           highlight={user.username}
           description={`ID: ${user.id}`}
           breadcrumbs={[
             { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
-            { label: "Komunitas", href: "/admin/users", icon: Users },
+            { label: "Pengguna", href: "/admin/users", icon: Users },
             { label: "Database", href: "/admin/users/list", icon: List },
             { label: user.username, active: true, icon: UserIcon },
           ]}

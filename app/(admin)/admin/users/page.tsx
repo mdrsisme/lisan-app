@@ -4,6 +4,7 @@ import AdminLayout from "@/components/layouts/AdminLayout";
 import PageHeader from "@/components/ui/PageHeader"; 
 import HubCard from "@/components/ui/HubCard";
 import { Database, UserPlus, LayoutGrid, Users } from "lucide-react";
+import { themeColors } from "@/lib/color";
 
 export default function UsersHubPage() {
   return (
@@ -11,7 +12,7 @@ export default function UsersHubPage() {
       <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-in-up pb-10 px-6">
         
         <PageHeader
-          theme="rose"
+          theme={themeColors.ocean}
           title="Manajemen"
           highlight="Pengguna"
           description="Manajemen data seluruh pengguna sistem."
@@ -27,7 +28,7 @@ export default function UsersHubPage() {
             title="Database Pengguna"
             description="Akses tabel data lengkap."
             icon={Database}
-            theme="rose"
+            theme={themeColors.ocean}
           />
 
           <HubCard
@@ -35,7 +36,7 @@ export default function UsersHubPage() {
             title="Registrasi"
             description="Tambahkan administrator atau user baru."
             icon={UserPlus}
-            theme="rose"
+            theme={themeColors.ocean}
             badge="Admin Access"
           />
         </div>

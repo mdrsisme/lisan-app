@@ -9,6 +9,7 @@ import {
   LayoutGrid, Users, UserPlus, ArrowRight
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { themeColors } from "@/lib/color";
 
 export default function VerifyContent() {
   const router = useRouter();
@@ -62,15 +63,14 @@ export default function VerifyContent() {
   return (
       <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
-        {/* HEADER */}
         <PageHeader
-          theme="rose"
+          theme={themeColors.ocean}
           title="Verifikasi"
           highlight="Manual"
           description="Aktivasi akun pengguna menggunakan kode OTP atau token admin."
           breadcrumbs={[
             { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
-            { label: "Komunitas", href: "/admin/users", icon: Users },
+            { label: "Pengguna", href: "/admin/users", icon: Users },
             { label: "Buat Pengguna", href: "/admin/users/create", icon: UserPlus },
             { label: "Verifikasi", active: true, icon: ShieldCheck },
           ]}

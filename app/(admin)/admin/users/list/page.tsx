@@ -13,6 +13,7 @@ import {
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import PageHeader from "@/components/ui/PageHeader";
+import { themeColors } from "@/lib/color";
 
 type User = {
   id: string;
@@ -94,13 +95,13 @@ export default function UserListPage() {
       <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         <PageHeader
-          theme="rose"
+          theme={themeColors.ocean}
           title="Database"
           highlight="Pengguna"
           description="Kelola seluruh data pengguna yang terdaftar."
           breadcrumbs={[
             { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
-            { label: "Komunitas", href: "/admin/users", icon: Users },
+            { label: "Pengguna", href: "/admin/users", icon: Users },
             { label: "Database", active: true, icon: List },
           ]}
         />
@@ -252,10 +253,6 @@ export default function UserListPage() {
                               <Eye size={18} />
                             </button>
                           </Link>
-                          
-                          <button className="p-2.5 rounded-xl text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all" title="Hapus User">
-                            <Trash2 size={18} />
-                          </button>
                         </div>
                       </td>
                     </tr>

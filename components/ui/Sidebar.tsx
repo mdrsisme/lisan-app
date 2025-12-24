@@ -13,46 +13,49 @@ import {
   MoreHorizontal,
   LogOut,
   X,
+  BookOpen,
+  Layers,
+  FileText,
+  ArrowLeftRight,
+  Book,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-
-// --- KONFIGURASI TEMA ---
-const THEMES = {
-  blue: { primary: "text-blue-600", gradient: "from-blue-500 to-indigo-600", orbBg: "from-blue-500/20 via-blue-50/40 to-white", glow: "bg-blue-400" },
-  emerald: { primary: "text-emerald-600", gradient: "from-emerald-400 to-teal-600", orbBg: "from-emerald-500/20 via-emerald-50/40 to-white", glow: "bg-emerald-400" },
-  amber: { primary: "text-amber-600", gradient: "from-amber-400 to-orange-500", orbBg: "from-amber-500/20 via-amber-50/40 to-white", glow: "bg-amber-400" },
-  rose: { primary: "text-rose-600", gradient: "from-rose-500 to-pink-600", orbBg: "from-rose-500/20 via-rose-50/40 to-white", glow: "bg-rose-400" },
-  violet: { primary: "text-violet-600", gradient: "from-violet-500 to-purple-600", orbBg: "from-violet-500/20 via-violet-50/40 to-white", glow: "bg-violet-400" },
-  cyan: { primary: "text-cyan-600", gradient: "from-cyan-400 to-blue-500", orbBg: "from-cyan-500/20 via-cyan-50/40 to-white", glow: "bg-cyan-400" },
-  fuchsia: { primary: "text-fuchsia-600", gradient: "from-fuchsia-500 to-purple-600", orbBg: "from-fuchsia-500/20 via-fuchsia-50/40 to-white", glow: "bg-fuchsia-400" },
-  orange: { primary: "text-orange-600", gradient: "from-orange-500 to-red-500", orbBg: "from-orange-500/20 via-orange-50/40 to-white", glow: "bg-orange-400" },
-  lime: { primary: "text-lime-600", gradient: "from-lime-400 to-emerald-600", orbBg: "from-lime-500/20 via-lime-50/40 to-white", glow: "bg-lime-400" },
-  indigo: { primary: "text-indigo-600", gradient: "from-indigo-500 to-blue-700", orbBg: "from-indigo-500/20 via-indigo-50/40 to-white", glow: "bg-indigo-400" },
-  crimson: { primary: "text-red-600", gradient: "from-red-500 to-rose-700", orbBg: "from-red-500/20 via-red-50/40 to-white", glow: "bg-red-400" },
-  teal: { primary: "text-teal-600", gradient: "from-teal-400 to-emerald-600", orbBg: "from-teal-500/20 via-teal-50/40 to-white", glow: "bg-teal-400" },
-  gold: { primary: "text-yellow-700", gradient: "from-yellow-400 via-orange-400 to-yellow-600", orbBg: "from-yellow-500/20 via-yellow-50/40 to-white", glow: "bg-yellow-400" },
-  slate: { primary: "text-slate-700", gradient: "from-slate-600 to-slate-800", orbBg: "from-slate-500/10 via-slate-50/40 to-white", glow: "bg-slate-400" },
-  sky: { primary: "text-sky-600", gradient: "from-sky-400 to-indigo-400", orbBg: "from-sky-500/20 via-sky-50/40 to-white", glow: "bg-sky-400" },
-};
+import { themeColors } from "@/lib/color";
 
 const menuGroups = [
   {
     label: "Utama",
-    theme: THEMES.indigo,
+    theme: themeColors.cosmic,
     items: [{ name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard }],
   },
   {
     label: "Komunitas",
-    theme: THEMES.rose,
+    theme: themeColors.ocean,
     items: [{ name: "Pengguna", href: "/admin/users", icon: Users }],
   },
   {
+    label: "Pembelajaran",
+    theme: themeColors.solar,
+    items: [
+      { name: "Course", href: "/admin/courses", icon: BookOpen },
+      { name: "Module", href: "/admin/modules", icon: Layers },
+      { name: "Lesson", href: "/admin/lessons", icon: FileText },
+    ],
+  },
+  {
     label: "Konten",
-    theme: THEMES.violet,
+    theme: themeColors.midnight,
     items: [
       { name: "Pengumuman", href: "/admin/announcements", icon: Megaphone },
       { name: "FAQ / Bantuan", href: "/admin/faq", icon: HelpCircle },
+    ],
+  },
+  {
+    label: "Ekstra",
+    theme: themeColors.ocean,
+    items: [
+      { name: "Dokumentasi", href: "/documents", icon: Book },
     ],
   },
 ];
@@ -110,7 +113,7 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData }: Si
           </button>
         </div>
 
-        <div className="flex-1 px-4 space-y-8 overflow-y-auto">
+        <div className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar">
           {menuGroups.map((group) => (
             <div key={group.label}>
               <p className="px-4 mb-3 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
@@ -118,7 +121,10 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData }: Si
               </p>
               <ul className="space-y-1">
                 {group.items.map((item) => {
-                  const isActive = pathname === item.href;
+                  const isActive = 
+                    pathname === item.href || 
+                    pathname?.startsWith(`${item.href}/`);
+
                   return (
                     <li key={item.name}>
                       <Link
@@ -126,7 +132,7 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData }: Si
                         className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 group
                           ${
                             isActive
-                              ? `bg-gradient-to-r ${group.theme.gradient} text-white shadow-lg shadow-black/5`
+                              ? `${group.theme.gradient} text-white ${group.theme.shadow}`
                               : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                           }`}
                       >
@@ -177,7 +183,7 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData }: Si
               </button>
 
               {isProfileMenuOpen && (
-                <div className="absolute bottom-full right-0 mb-2 w-52 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 p-2 z-50 animate-in slide-in-from-bottom-2 fade-in">
+                <div className="absolute bottom-full right-0 mb-2 w-56 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-100 p-2 z-50 animate-in slide-in-from-bottom-2 fade-in">
                   <Link
                     href="/admin/profile"
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
@@ -185,6 +191,7 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData }: Si
                   >
                     <User size={18} /> Profile Saya
                   </Link>
+                  
                   <Link
                     href="/admin/settings"
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
@@ -192,7 +199,17 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData }: Si
                   >
                     <Settings size={18} /> Pengaturan
                   </Link>
+
+                  <Link
+                    href="/login/select"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                  >
+                    <ArrowLeftRight size={18} /> Ganti Mode
+                  </Link>
+                  
                   <div className="h-px bg-slate-100 my-1.5" />
+                  
                   <button
                     onClick={() => {
                       setIsProfileMenuOpen(false);
