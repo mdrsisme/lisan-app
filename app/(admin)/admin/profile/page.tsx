@@ -1,56 +1,121 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { 
-  ArrowLeft, Camera, User, Mail, AtSign, Save, Loader2, MapPin 
+  ArrowLeft, Camera, User, Mail, AtSign, Save, Loader2, MapPin, UploadCloud 
 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [userData, setUserData] = useState({
+    id: "",
     full_name: "",
     username: "",
     email: "",
     role: "",
-    initial: "",
-    bio: "Bergabung dengan LISAN untuk menciptakan dunia yang lebih inklusif."
+    bio: "Bergabung dengan LISAN untuk menciptakan ekosistem inklusif.",
+    avatar_url: ""
   });
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
-      const user = JSON.parse(userStr);
-      setUserData(prev => ({
-        ...prev,
-        full_name: user.full_name || "",
-        username: user.username || "",
-        email: user.email || "",
-        role: user.role || "User",
-        initial: (user.full_name || "A").charAt(0).toUpperCase()
-      }));
+      const localUser = JSON.parse(userStr);
+      fetchProfile(localUser.id);
     }
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      alert("Profil berhasil diperbarui!");
-    }, 1500);
+  const fetchProfile = async (id: string) => {
+    try {
+      const res = await api.get(`/users/${id}`);
+      if (res.success || res.data) {
+        const user = res.data;
+        setUserData({
+          id: user.id,
+          full_name: user.full_name || "",
+          username: user.username || "",
+          email: user.email || "",
+          role: user.role || "user",
+          bio: user.bio || "Bergabung dengan LISAN untuk menciptakan ekosistem inklusif.",
+          avatar_url: user.avatar_url || ""
+        });
+      }
+    } catch (error) {
+      console.error("Gagal mengambil profil", error);
+    }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreviewImage(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("user_id", userData.id); 
+      formData.append("full_name", userData.full_name);
+      formData.append("username", userData.username);
+      formData.append("email", userData.email);
+      
+      if (selectedFile) {
+        formData.append("avatar", selectedFile);
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
+        method: "PUT",
+        body: formData,
+      });
+      
+      const response = await res.json();
+
+      if (res.ok) {
+        alert("Profil berhasil diperbarui!");
+        const updatedUser = { ...userData, ...response.data };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      } else {
+        throw new Error(response.message || "Gagal update");
+      }
+
+    } catch (error: any) {
+      alert("Gagal memperbarui profil: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const gradientBg = "bg-gradient-to-tl from-[#3b82f6] via-[#06b6d4] to-[#10b981]";
+  const textAccent = "text-[#10b981]"; // Emerald
+  const borderFocus = "focus:border-[#06b6d4] focus:ring-[#06b6d4]/20";
+  const btnGradient = "bg-gradient-to-r from-[#3b82f6] to-[#10b981] hover:shadow-[0_20px_40px_-15px_rgba(6,182,212,0.4)]";
+
   return (
-    <div className="min-h-screen bg-[#f8faff] text-slate-600 font-sans relative overflow-x-hidden flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#f0f9ff] text-slate-600 font-sans relative overflow-x-hidden flex items-center justify-center p-6">
 
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#6B4FD3]/10 rounded-full blur-[100px] animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#F062C0]/10 rounded-full blur-[100px]" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.4] mix-blend-soft-light" />
+        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-[#3b82f6]/10 rounded-full blur-[100px] animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#10b981]/10 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 opacity-[0.4] mix-blend-soft-light" style={{ backgroundImage: 'url("/noise.png")' }} />
       </div>
 
-      <div className="relative z-10 w-full max-w-4xl animate-fade-in-up">
+      <div className="relative z-10 w-full max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-700">
 
         <div className="flex items-center justify-between mb-8">
           <Link 
@@ -62,95 +127,120 @@ export default function ProfilePage() {
           </Link>
           <h1 className="text-2xl font-bold text-slate-800">Profil Saya</h1>
         </div>
-        <div className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden">
 
-          <div className="h-32 bg-gradient-to-r from-[#6ECFF6]/30 via-[#6B4FD3]/20 to-[#F062C0]/20 relative">
-            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.2]" />
+        <div className="bg-white/80 backdrop-blur-xl border border-white/60 rounded-[2.5rem] shadow-2xl shadow-cyan-900/5 overflow-hidden">
+
+          <div className={`h-40 ${gradientBg} relative`}>
+            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.15]" />
+            <div className="absolute bottom-0 w-full h-16 bg-gradient-to-t from-white/80 to-transparent" />
           </div>
 
-          <div className="px-8 pb-8">
-            <div className="flex flex-col md:flex-row gap-8">
+          <div className="px-8 pb-10">
+            <div className="flex flex-col md:flex-row gap-10">
 
-              <div className="-mt-12 flex flex-col items-center">
-                <div className="relative group">
-                  <div className="w-32 h-32 rounded-full bg-white p-1.5 shadow-xl">
-                    <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#6B4FD3] to-[#F062C0] flex items-center justify-center text-4xl font-bold text-white shadow-inner">
-                      {userData.initial}
+              <div className="-mt-16 flex flex-col items-center">
+                <div className="relative group cursor-pointer" onClick={triggerFileInput}>
+                  <div className="w-36 h-36 rounded-[2rem] bg-white p-1.5 shadow-xl shadow-cyan-500/20 transform group-hover:scale-105 transition-all duration-300">
+                    <div className={`w-full h-full rounded-[1.8rem] overflow-hidden flex items-center justify-center bg-slate-50 relative border border-slate-100`}>
+                      {(previewImage || userData.avatar_url) ? (
+                        <img 
+                          src={previewImage || userData.avatar_url} 
+                          alt="Profile" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className={`text-4xl font-bold bg-clip-text text-transparent ${gradientBg}`}>
+                          {(userData.full_name || "U").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <UploadCloud className="text-white" size={32} />
+                      </div>
                     </div>
                   </div>
-                  <button className="absolute bottom-0 right-0 p-2.5 rounded-full bg-white text-slate-600 shadow-lg border border-slate-100 hover:text-[#6B4FD3] transition-colors">
+                  
+                  <button type="button" className="absolute bottom-2 right-2 p-2.5 rounded-xl bg-white text-slate-600 shadow-lg border border-slate-100 group-hover:text-[#06b6d4] transition-colors">
                     <Camera size={18} />
                   </button>
+
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                    accept="image/*"
+                  />
                 </div>
                 
-                <div className="mt-4 text-center">
-                  <h2 className="text-xl font-bold text-slate-800">{userData.full_name}</h2>
-                  <p className="text-sm font-medium text-[#6B4FD3] bg-[#6B4FD3]/10 px-3 py-1 rounded-full inline-block mt-1">
+                <div className="mt-5 text-center">
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight">{userData.full_name}</h2>
+                  <p className="text-xs font-bold text-[#06b6d4] bg-cyan-50 border border-cyan-100 px-3 py-1 rounded-lg inline-block mt-2 uppercase tracking-wider">
                     {userData.role}
                   </p>
                 </div>
               </div>
 
-              <div className="flex-1 pt-4 md:pt-8">
+              <div className="flex-1 pt-2 md:pt-6">
                 <form onSubmit={handleSave} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <User size={16} className="text-[#6B4FD3]" /> Nama Lengkap
+                    <div className="space-y-2 group">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+                        <User size={14} className={textAccent} /> Nama Lengkap
                       </label>
                       <input 
                         type="text" 
-                        className="w-full h-12 px-4 rounded-xl bg-white/50 border border-slate-200 focus:bg-white focus:border-[#6B4FD3] focus:ring-4 focus:ring-[#6B4FD3]/10 outline-none transition-all text-slate-700 font-medium"
+                        className={`w-full h-14 px-5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 transition-all outline-none text-slate-700 font-bold placeholder:text-slate-300 ${borderFocus}`}
                         value={userData.full_name}
                         onChange={(e) => setUserData({...userData, full_name: e.target.value})}
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <AtSign size={16} className="text-[#6B4FD3]" /> Username
+                    <div className="space-y-2 group">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+                        <AtSign size={14} className={textAccent} /> Username
                       </label>
                       <input 
                         type="text" 
-                        className="w-full h-12 px-4 rounded-xl bg-white/50 border border-slate-200 focus:bg-white focus:border-[#6B4FD3] focus:ring-4 focus:ring-[#6B4FD3]/10 outline-none transition-all text-slate-700 font-medium"
+                        className={`w-full h-14 px-5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 transition-all outline-none text-slate-700 font-bold placeholder:text-slate-300 ${borderFocus}`}
                         value={userData.username}
-                        readOnly
+                        onChange={(e) => setUserData({...userData, username: e.target.value})}
                       />
                     </div>
 
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <Mail size={16} className="text-[#6B4FD3]" /> Email
+                    <div className="space-y-2 md:col-span-2 group">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+                        <Mail size={14} className={textAccent} /> Email Address
                       </label>
                       <input 
                         type="email" 
-                        className="w-full h-12 px-4 rounded-xl bg-white/50 border border-slate-200 focus:bg-white focus:border-[#6B4FD3] focus:ring-4 focus:ring-[#6B4FD3]/10 outline-none transition-all text-slate-700 font-medium"
+                        className={`w-full h-14 px-5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 transition-all outline-none text-slate-700 font-bold placeholder:text-slate-300 ${borderFocus}`}
                         value={userData.email}
                         onChange={(e) => setUserData({...userData, email: e.target.value})}
                       />
                     </div>
 
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                        <MapPin size={16} className="text-[#6B4FD3]" /> Bio
+                    <div className="space-y-2 md:col-span-2 group">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+                        <MapPin size={14} className={textAccent} /> Bio Singkat
                       </label>
                       <textarea 
                         rows={3}
-                        className="w-full p-4 rounded-xl bg-white/50 border border-slate-200 focus:bg-white focus:border-[#6B4FD3] focus:ring-4 focus:ring-[#6B4FD3]/10 outline-none transition-all text-slate-700 font-medium resize-none"
+                        className={`w-full p-5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 transition-all outline-none text-slate-700 font-medium resize-none placeholder:text-slate-300 ${borderFocus}`}
                         value={userData.bio}
                         onChange={(e) => setUserData({...userData, bio: e.target.value})}
                       />
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <div className="pt-6 border-t border-slate-100 flex justify-end">
                     <button 
                       type="submit"
                       disabled={isLoading}
-                      className="px-8 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-[#6B4FD3] hover:shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5 transition-all flex items-center gap-2 disabled:opacity-70"
+                      className={`px-8 py-4 rounded-2xl ${btnGradient} text-white font-bold text-lg shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed`}
                     >
-                      {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                      {isLoading ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
                       Simpan Perubahan
                     </button>
                   </div>

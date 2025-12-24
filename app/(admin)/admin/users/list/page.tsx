@@ -6,9 +6,8 @@ import { api } from "@/lib/api";
 import Link from "next/link";
 import { 
   Search, Filter, ChevronLeft, ChevronRight, 
-  ArrowUpDown, ShieldCheck, Sparkles, 
-  Download, Trash2, Eye, LayoutGrid, Users, List,
-  MoreHorizontal, Crown, CheckCircle2
+  ArrowUpDown, ShieldCheck, Crown, Eye, 
+  LayoutGrid, Users, List
 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -48,6 +47,14 @@ export default function UserListPage() {
   const [sortBy, setSortBy] = useState("created_at");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
+
+  // --- OCEAN THEME CONSTANTS ---
+  // Kita gunakan class-class ini agar konsisten dengan tema Ocean yang diminta
+  const accentColor = "text-[#10b981]"; // Emerald green untuk aksen teks utama
+  const hoverColor = "hover:text-[#06b6d4]"; // Cyan untuk hover
+  const gradientBg = "bg-gradient-to-tl from-[#3b82f6] via-[#06b6d4] to-[#10b981]"; // Gradient Ocean
+  const focusRing = "focus:ring-[#06b6d4]/20"; // Ring warna Cyan soft
+  const activeBorder = "border-[#06b6d4]";
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -106,15 +113,15 @@ export default function UserListPage() {
           ]}
         />
 
-        <div className="bg-white p-2 rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2 items-center">
+        <div className="bg-white p-2 rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2 items-center group/search focus-within:border-[#06b6d4]/50 transition-colors duration-300">
           <div className="relative flex-1 w-full group">
-            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-rose-500 transition-colors">
+            <div className={`absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#06b6d4] transition-colors`}>
               <Search size={20} />
             </div>
             <input 
               type="text" 
               placeholder="Cari user via nama, email, atau username..." 
-              className="w-full h-14 pl-14 pr-4 rounded-2xl bg-slate-50 border-none focus:bg-white focus:ring-2 focus:ring-rose-100 transition-all outline-none font-medium text-slate-700 placeholder:text-slate-400"
+              className={`w-full h-14 pl-14 pr-4 rounded-2xl bg-slate-50 border-none focus:bg-white focus:ring-4 ${focusRing} transition-all outline-none font-medium text-slate-700 placeholder:text-slate-400`}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -122,11 +129,11 @@ export default function UserListPage() {
 
           <div className="flex w-full md:w-auto gap-2">
             <div className="relative flex-1 md:w-48 group">
-               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 z-10 pointer-events-none group-hover:text-rose-500 transition-colors">
+               <div className={`absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 z-10 pointer-events-none group-hover:text-[#06b6d4] transition-colors`}>
                   <Filter size={16} />
                </div>
                <select 
-                 className="w-full h-14 pl-11 pr-10 rounded-2xl bg-white border border-slate-200 hover:border-rose-200 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold text-slate-600 appearance-none cursor-pointer transition-all"
+                 className={`w-full h-14 pl-11 pr-10 rounded-2xl bg-white border border-slate-200 hover:border-[#06b6d4]/50 focus:border-[#06b6d4] focus:ring-4 ${focusRing} outline-none font-bold text-slate-600 appearance-none cursor-pointer transition-all`}
                  value={role}
                  onChange={(e) => { setRole(e.target.value); setPage(1); }}
                >
@@ -144,14 +151,14 @@ export default function UserListPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th onClick={() => handleSort('full_name')} className="p-6 pl-8 text-[11px] font-extrabold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-rose-500 transition-colors select-none group">
+                  <th onClick={() => handleSort('full_name')} className={`p-6 pl-8 text-[11px] font-extrabold text-slate-400 uppercase tracking-widest cursor-pointer ${hoverColor} transition-colors select-none group`}>
                     <div className="flex items-center gap-2">User Identity <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-100 transition-opacity"/></div>
                   </th>
                   <th className="p-6 text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Role & Badge</th>
-                  <th onClick={() => handleSort('level')} className="p-6 text-[11px] font-extrabold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-rose-500 transition-colors select-none group">
+                  <th onClick={() => handleSort('level')} className={`p-6 text-[11px] font-extrabold text-slate-400 uppercase tracking-widest cursor-pointer ${hoverColor} transition-colors select-none group`}>
                     <div className="flex items-center gap-2">Stats <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-100 transition-opacity"/></div>
                   </th>
-                  <th onClick={() => handleSort('created_at')} className="p-6 text-[11px] font-extrabold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-rose-500 transition-colors select-none group">
+                  <th onClick={() => handleSort('created_at')} className={`p-6 text-[11px] font-extrabold text-slate-400 uppercase tracking-widest cursor-pointer ${hoverColor} transition-colors select-none group`}>
                     <div className="flex items-center gap-2">Joined Date <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-100 transition-opacity"/></div>
                   </th>
                   <th className="p-6 pr-8 text-right text-[11px] font-extrabold text-slate-400 uppercase tracking-widest">Manage</th>
@@ -171,21 +178,21 @@ export default function UserListPage() {
                   ))
                 ) : users.length > 0 ? (
                   users.map((user) => (
-                    <tr key={user.id} className="group hover:bg-slate-50/80 transition-all duration-200">
+                    <tr key={user.id} className="group hover:bg-[#ecfeff]/50 transition-all duration-200"> {/* Hover bg cyan sangat muda */}
                       <td className="p-6 pl-8">
                         <div className="flex items-center gap-5">
                           <div className="relative shrink-0">
                             {user.avatar_url ? (
                               <img src={user.avatar_url} alt={user.username} className="w-12 h-12 rounded-[1rem] object-cover shadow-sm ring-4 ring-transparent group-hover:ring-white transition-all" />
                             ) : (
-                              <div className="w-12 h-12 rounded-[1rem] bg-gradient-to-br from-rose-100 to-indigo-100 flex items-center justify-center text-rose-600 font-black text-lg shadow-sm border border-white">
+                              <div className={`w-12 h-12 rounded-[1rem] ${gradientBg} flex items-center justify-center text-white font-black text-lg shadow-md border border-white group-hover:scale-105 transition-transform duration-300`}>
                                 {user.full_name?.charAt(0) || user.username?.charAt(0) || "?"}
                               </div>
                             )}
                             <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-[3px] border-white rounded-full ${user.is_verified ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                           </div>
                           <div>
-                            <p className="font-bold text-slate-800 text-[15px] group-hover:text-rose-600 transition-colors">
+                            <p className={`font-bold text-slate-800 text-[15px] group-hover:text-[#06b6d4] transition-colors`}>
                               {user.full_name || "Tanpa Nama"}
                             </p>
                             <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5 font-medium">
@@ -224,11 +231,11 @@ export default function UserListPage() {
                           <div className="w-full max-w-[140px]">
                              <div className="flex justify-between text-xs font-bold mb-2 text-slate-600">
                                <span>Lvl. {user.level}</span>
-                               <span className="text-rose-500">{user.xp} XP</span>
+                               <span className="text-[#06b6d4]">{user.xp} XP</span>
                              </div>
                              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                                 <div 
-                                  className="h-full bg-gradient-to-r from-rose-400 to-indigo-500 rounded-full" 
+                                  className={`h-full ${gradientBg} rounded-full`} 
                                   style={{ width: `${Math.min((user.xp / (user.level * 100)) * 100, 100)}%` }}
                                 />
                              </div>
@@ -249,7 +256,7 @@ export default function UserListPage() {
                       <td className="p-6 pr-8 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                           <Link href={`/admin/users/${user.id}`}>
-                            <button className="p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-all" title="Detail Profil">
+                            <button className="p-2.5 rounded-xl text-slate-500 hover:text-[#06b6d4] hover:bg-[#ecfeff] transition-all" title="Detail Profil">
                               <Eye size={18} />
                             </button>
                           </Link>
