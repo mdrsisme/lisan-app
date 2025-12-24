@@ -123,7 +123,8 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData }: Si
                 {group.items.map((item) => {
                   const isActive = 
                     pathname === item.href || 
-                    pathname?.startsWith(`${item.href}/`);
+                    pathname?.startsWith(`${item.href}/`) ||
+                    (item.href === "/admin/documents" && pathname?.startsWith("/admin/api-documentation"));
 
                   return (
                     <li key={item.name}>
