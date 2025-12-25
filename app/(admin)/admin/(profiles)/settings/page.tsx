@@ -16,8 +16,6 @@ import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Notification from "@/components/ui/Notification";
-import PageHeader from "@/components/ui/PageHeader";
-import { themeColors } from "@/lib/color";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -27,7 +25,6 @@ export default function SettingsPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [passwords, setPasswords] = useState({
-    oldPassword: "",
     newPassword: "",
   });
 
@@ -54,16 +51,18 @@ export default function SettingsPage() {
 
     setIsLoading(true);
     try {
+      // Gunakan endpoint updateMyProfile di backend
       const res = await api.put("/users/me", {
+        user_id: user.id, // Kirim ID user
         password: passwords.newPassword
       });
 
-      if (res.success || res.data) {
+      if (res.success) {
         setNotification({
           type: "success",
           message: "Kata sandi berhasil diperbarui.",
         });
-        setPasswords({ oldPassword: "", newPassword: "" });
+        setPasswords({ newPassword: "" });
       } else {
         throw new Error(res.message || "Gagal update password");
       }
@@ -82,21 +81,14 @@ export default function SettingsPage() {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ user_id: user.id })
-      });
+      // Gunakan endpoint deleteMyAccount
+      const res = await api.delete("/users/me", { user_id: user.id });
 
-      const data = await res.json();
-
-      if (res.ok) {
+      if (res.success) {
         localStorage.clear();
         router.push("/login");
       } else {
-        throw new Error(data.message || "Gagal menghapus akun");
+        throw new Error(res.message || "Gagal menghapus akun");
       }
 
     } catch (error: any) {
@@ -111,7 +103,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#f6f8ff] overflow-hidden flex items-center justify-center p-6">
+    <div className="relative min-h-screen bg-[#f6f8ff] overflow-hidden flex items-center justify-center p-6 font-sans">
 
       <Notification
         type={notification.type}
@@ -131,13 +123,13 @@ export default function SettingsPage() {
         <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-                <Link href="/admin/dashboard" className="p-2 rounded-xl bg-white/50 hover:bg-white text-slate-500 hover:text-indigo-600 transition-all">
+                <Link href="/admin/dashboard" className="p-2 rounded-xl bg-white/50 hover:bg-white text-slate-500 hover:text-indigo-600 transition-all shadow-sm">
                     <ArrowLeft size={20} />
                 </Link>
                 <h1 className="text-3xl font-black text-slate-800">Pengaturan</h1>
             </div>
             <p className="text-sm text-slate-500 ml-1">
-              Kelola preferensi dan keamanan akun{" "}
+              Kelola keamanan akun{" "}
               <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600">
                 {user?.full_name}
               </span>
@@ -169,6 +161,8 @@ export default function SettingsPage() {
           </aside>
 
           <main className="flex flex-col gap-8">
+            
+            {/* Ubah Password Section */}
             <section className="bg-white/60 border border-white/60 rounded-[2rem] p-8 shadow-sm hover:shadow-md transition-shadow duration-300">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
@@ -217,6 +211,7 @@ export default function SettingsPage() {
               </div>
             </section>
 
+            {/* Hapus Akun Section */}
             <section className="relative overflow-hidden rounded-[2rem] border border-red-100 bg-gradient-to-br from-white to-red-50 p-8 shadow-sm group">
 
               <div className="absolute -top-24 -right-24 w-[300px] h-[300px] bg-red-500/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-red-500/10 transition-colors" />
@@ -250,6 +245,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Modal Hapus Akun */}
       {isDeleteOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div

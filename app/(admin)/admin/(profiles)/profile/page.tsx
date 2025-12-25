@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { 
-  ArrowLeft, Camera, User, Mail, AtSign, Save, Loader2, MapPin, UploadCloud 
+  ArrowLeft, Camera, User, Mail, AtSign, Save, Loader2, UploadCloud 
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -17,7 +17,6 @@ export default function ProfilePage() {
     username: "",
     email: "",
     role: "",
-    bio: "Bergabung dengan LISAN untuk menciptakan ekosistem inklusif.",
     avatar_url: ""
   });
 
@@ -35,7 +34,7 @@ export default function ProfilePage() {
   const fetchProfile = async (id: string) => {
     try {
       const res = await api.get(`/users/${id}`);
-      if (res.success || res.data) {
+      if (res.success && res.data) {
         const user = res.data;
         setUserData({
           id: user.id,
@@ -43,7 +42,6 @@ export default function ProfilePage() {
           username: user.username || "",
           email: user.email || "",
           role: user.role || "user",
-          bio: user.bio || "Bergabung dengan LISAN untuk menciptakan ekosistem inklusif.",
           avatar_url: user.avatar_url || ""
         });
       }
@@ -66,6 +64,7 @@ export default function ProfilePage() {
 
     try {
       const formData = new FormData();
+      // Gunakan user_id agar sesuai dengan backend updateMyProfile
       formData.append("user_id", userData.id); 
       formData.append("full_name", userData.full_name);
       formData.append("username", userData.username);
@@ -75,6 +74,7 @@ export default function ProfilePage() {
         formData.append("avatar", selectedFile);
       }
 
+      // Pastikan endpoint benar (sesuai backend router.put('/me'))
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
         method: "PUT",
         body: formData,
@@ -84,6 +84,7 @@ export default function ProfilePage() {
 
       if (res.ok) {
         alert("Profil berhasil diperbarui!");
+        // Update local storage agar navbar langsung berubah
         const updatedUser = { ...userData, ...response.data };
         localStorage.setItem("user", JSON.stringify(updatedUser));
       } else {
@@ -183,7 +184,7 @@ export default function ProfilePage() {
 
               <div className="flex-1 pt-2 md:pt-6">
                 <form onSubmit={handleSave} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6">
                     
                     <div className="space-y-2 group">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
@@ -209,7 +210,7 @@ export default function ProfilePage() {
                       />
                     </div>
 
-                    <div className="space-y-2 md:col-span-2 group">
+                    <div className="space-y-2 group">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
                         <Mail size={14} className={textAccent} /> Email Address
                       </label>
@@ -221,17 +222,6 @@ export default function ProfilePage() {
                       />
                     </div>
 
-                    <div className="space-y-2 md:col-span-2 group">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
-                        <MapPin size={14} className={textAccent} /> Bio Singkat
-                      </label>
-                      <textarea 
-                        rows={3}
-                        className={`w-full p-5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 transition-all outline-none text-slate-700 font-medium resize-none placeholder:text-slate-300 ${borderFocus}`}
-                        value={userData.bio}
-                        onChange={(e) => setUserData({...userData, bio: e.target.value})}
-                      />
-                    </div>
                   </div>
 
                   <div className="pt-6 border-t border-slate-100 flex justify-end">
