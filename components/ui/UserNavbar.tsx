@@ -62,7 +62,7 @@ export default function UserNavbar() {
 
   const navLinks = [
     { href: "/dashboard", label: "Beranda", icon: LayoutGrid },
-    { href: "/courses", label: "Kursus Saya", icon: BookOpen },
+    { href: "/my-course", label: "Kursus Saya", icon: BookOpen },
     { href: "/explore", label: "Jelajahi", icon: Compass },
   ];
 
