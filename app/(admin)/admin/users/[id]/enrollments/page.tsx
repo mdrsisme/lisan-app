@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { 
-  Search, Plus, Loader2, BookOpen, Users, User, CheckCircle, ArrowLeft, X, Key, LayoutGrid
+  Search, Plus, Loader2, BookOpen, Users, User, CheckCircle, ArrowLeft, X, Key, Unlock, LayoutGrid
 } from "lucide-react";
 import { api } from "@/lib/api";
 import Notification from "@/components/ui/Notification";
@@ -13,12 +13,19 @@ import AdminLayout from "@/components/layouts/AdminLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import { themeColors } from "@/lib/color";
 
+type CourseLevel = 'beginner' | 'intermediate' | 'advanced';
+
 interface Course {
   id: string;
   title: string;
-  thumbnail_url: string | null;
-  level: string;
   slug: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  level: CourseLevel;
+  is_published: boolean;
+  access_key: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface UserDetail {
@@ -44,9 +51,8 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
     type: null, message: ""
   });
 
-  // State untuk Modal
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [accessKey, setAccessKey] = useState("ADMIN_BYPASS");
+  const [accessKey, setAccessKey] = useState(""); 
 
   useEffect(() => {
     fetchData();
@@ -81,7 +87,7 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
 
   const handleOpenModal = (course: Course) => {
     setSelectedCourse(course);
-    setAccessKey("ADMIN_BYPASS"); // Reset key to default
+    setAccessKey(course.access_key ? "ADMIN_BYPASS" : ""); 
   };
 
   const handleCloseModal = () => {
@@ -91,8 +97,9 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
 
   const handleConfirmEnroll = async () => {
     if (!selectedCourse) return;
-    if (!accessKey) {
-        alert("Access Key wajib diisi!");
+
+    if (selectedCourse.access_key && !accessKey) {
+        alert("Kursus ini memiliki proteksi. Access Key wajib diisi!");
         return;
     }
 
@@ -101,7 +108,7 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
       const payload = {
         user_id: id,
         course_id: selectedCourse.id,
-        used_key: accessKey 
+        used_key: accessKey || null 
       };
 
       const res = await api.post("/enrollments", payload);
@@ -115,7 +122,7 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
       }
     } catch (error: any) {
       setNotification({ type: 'error', message: error.message || "Gagal mendaftarkan user." });
-      setProcessing(false); // Stop processing but keep modal open on error
+      setProcessing(false);
     }
   };
 
@@ -140,7 +147,7 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
                 highlight="Enrollment Baru"
                 description={`Pilih kursus untuk ditambahkan ke ${user.full_name}`}
                 breadcrumbs={[
-                  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
+                    { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
                 { label: "Pengguna", href: "/admin/users", icon: Users },
                     { label: "User", href: `/admin/users/${id}`, icon: User },
                     { label: "Enrollments", active: true, icon: Plus },
@@ -229,7 +236,6 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
             </div>
         )}
 
-        {/* --- MODAL CONFIRMATION --- */}
         {selectedCourse && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden scale-100 animate-in zoom-in-95 duration-200">
@@ -262,25 +268,34 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
                                     {id}
                                 </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-500 uppercase">Course ID</label>
-                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-slate-600 truncate">
-                                    {selectedCourse.id}
+                            
+                            {selectedCourse.access_key ? (
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
+                                        <Key size={12} className="text-amber-500" /> Access Key (Required)
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full p-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                                        value={accessKey}
+                                        onChange={(e) => setAccessKey(e.target.value)}
+                                        placeholder="Masukkan kode akses..."
+                                    />
+                                    <p className="text-[10px] text-slate-400">*Default: ADMIN_BYPASS (Bisa diubah jika perlu)</p>
                                 </div>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1">
-                                    <Key size={12} /> Access Key / Kode Akses
-                                </label>
-                                <input 
-                                    type="text" 
-                                    className="w-full p-3 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
-                                    value={accessKey}
-                                    onChange={(e) => setAccessKey(e.target.value)}
-                                    placeholder="Masukkan kode akses..."
-                                />
-                                <p className="text-[10px] text-slate-400">*Default: ADMIN_BYPASS (Bisa diubah jika perlu)</p>
-                            </div>
+                            ) : (
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
+                                    <div className="bg-emerald-100 p-1.5 rounded-full text-emerald-600 mt-0.5">
+                                        <Unlock size={16} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-emerald-800">Kursus Publik</p>
+                                        <p className="text-xs text-emerald-600 mt-0.5">
+                                            Kursus ini tidak memerlukan Access Key. User bisa langsung didaftarkan.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-2 flex gap-3">

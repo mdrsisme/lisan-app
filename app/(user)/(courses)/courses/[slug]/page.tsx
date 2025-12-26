@@ -6,34 +6,32 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, Clock, Globe, Award, PlayCircle, 
-  Check, Key, Loader2, Lock, AlertCircle
+  Check, Key, Loader2, Lock, AlertCircle, Unlock
 } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
 import Notification from "@/components/ui/Notification";
 import { api } from "@/lib/api";
 
-interface CourseDetail {
+type CourseLevel = 'beginner' | 'intermediate' | 'advanced';
+
+interface Course {
   id: string;
   title: string;
   slug: string;
-  description: string;
+  description: string | null;
   thumbnail_url: string | null;
-  level: string;
-  price: number; 
+  level: CourseLevel;
   is_published: boolean;
+  access_key: string | null;
   created_at: string;
   updated_at: string;
-  author?: any;
-  curriculum?: any;
-  learning_points?: string[];
 }
 
-// Params sekarang menggunakan ID
 export default function CourseEnrollmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   
-  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const [course, setCourse] = useState<Course | null>(null);
   const [user, setUser] = useState<any>(null);
   
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +59,6 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
         setIsLoading(true);
         setFetchError(false);
     
-        // Fetch Course langsung pakai ID
         const courseRes = await api.get(`/courses/${id}`);
         
         if (courseRes.success && courseRes.data) {
@@ -102,16 +99,17 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
 
     if (!course?.id) return;
 
-    if (!accessKey) {
+    if (course.access_key && !accessKey) {
         setNotification({ type: 'error', message: "Mohon masukkan Kode Akses (Key)." });
         return;
     }
+
     setIsSubmitting(true);
     try {
         const payload = {
             user_id: user.id,
             course_id: course.id,
-            used_key: accessKey 
+            used_key: accessKey || null 
         };
         const res = await api.post("/enrollments", payload);
         if (res.success) {
@@ -212,7 +210,7 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
                     <h3 className="text-xl font-black text-slate-900 mb-6">Tentang Kursus Ini</h3>
                     <div 
                         className="prose prose-slate prose-sm max-w-none text-slate-600 leading-loose"
-                        dangerouslySetInnerHTML={{ __html: course.description }}
+                        dangerouslySetInnerHTML={{ __html: course.description || "" }}
                     />
                 </div>
 
@@ -305,26 +303,38 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
                                         </span>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">
-                                            Kode Akses
-                                        </label>
-                                        <div className="relative group">
-                                            <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-indigo-500 group-focus-within:text-indigo-600 transition-colors">
-                                                <Key size={20} />
+                                    {course.access_key ? (
+                                        <div className="space-y-2">
+                                            <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">
+                                                Kode Akses
+                                            </label>
+                                            <div className="relative group">
+                                                <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-indigo-500 group-focus-within:text-indigo-600 transition-colors">
+                                                    <Key size={20} />
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Masukkan kode unik..."
+                                                    className="w-full h-14 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 outline-none text-sm placeholder:text-slate-400 placeholder:font-normal"
+                                                    value={accessKey}
+                                                    onChange={(e) => setAccessKey(e.target.value)}
+                                                />
                                             </div>
-                                            <input 
-                                                type="text" 
-                                                placeholder="Masukkan kode unik..."
-                                                className="w-full h-14 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 outline-none text-sm placeholder:text-slate-400 placeholder:font-normal"
-                                                value={accessKey}
-                                                onChange={(e) => setAccessKey(e.target.value)}
-                                            />
+                                            <p className="text-[10px] text-slate-400 px-1 font-medium">
+                                                *Diperlukan untuk validasi pendaftaran.
+                                            </p>
                                         </div>
-                                        <p className="text-[10px] text-slate-400 px-1 font-medium">
-                                            *Diperlukan untuk validasi pendaftaran.
-                                        </p>
-                                    </div>
+                                    ) : (
+                                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
+                                            <div className="bg-emerald-100 p-2 rounded-full text-emerald-600">
+                                                <Unlock size={20} />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-emerald-800">Akses Publik</p>
+                                                <p className="text-xs text-emerald-600 font-medium">Anda bisa langsung mendaftar tanpa kode.</p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <button 
                                         onClick={handleEnroll}
