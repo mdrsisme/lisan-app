@@ -27,8 +27,8 @@ interface Course {
   updated_at: string;
 }
 
-export default function CourseEnrollmentPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function CourseEnrollmentPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const router = useRouter();
   
   const [course, setCourse] = useState<Course | null>(null);
@@ -59,15 +59,17 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
         setIsLoading(true);
         setFetchError(false);
     
-        const courseRes = await api.get(`/courses/${id}`);
+        // 1. Ambil data course berdasarkan SLUG dari URL
+        const courseRes = await api.get(`/courses/${slug}`);
         
         if (courseRes.success && courseRes.data) {
             const courseData = courseRes.data;
             setCourse(courseData);
 
-            if (localUser && localUser.id) {
+            // 2. Cek status enrollment menggunakan ID asli dari data course yang didapat
+            if (localUser && localUser.id && courseData.id) {
                 try {
-                    const checkRes = await api.get(`/enrollments/check?user_id=${localUser.id}&course_id=${id}`);
+                    const checkRes = await api.get(`/enrollments/check?user_id=${localUser.id}&course_id=${courseData.id}`);
                     if (checkRes.success) {
                         setIsEnrolled(checkRes.data.is_enrolled);
                         setEnrollmentData(checkRes.data.enrollment_data);
@@ -88,8 +90,10 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
       }
     };
 
-    initData();
-  }, [id]);
+    if (slug) {
+        initData();
+    }
+  }, [slug]);
 
   const handleEnroll = async () => {
     if (!user) {
@@ -97,6 +101,7 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
         return;
     }
 
+    // Pastikan ID course sudah tersedia dari state course
     if (!course?.id) return;
 
     if (course.access_key && !accessKey) {
@@ -106,6 +111,7 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
 
     setIsSubmitting(true);
     try {
+        // Kirim ID asli ke backend untuk proses enrollment
         const payload = {
             user_id: user.id,
             course_id: course.id,
@@ -144,7 +150,7 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
                 </div>
                 <h1 className="text-2xl font-bold text-slate-900 mb-2">Kursus Tidak Ditemukan</h1>
                 <p className="text-slate-500 max-w-md mb-8">
-                    Kursus dengan ID tersebut tidak ditemukan.
+                    Kursus yang Anda cari mungkin telah dihapus atau URL salah.
                 </p>
                 <Link href="/explore" className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">
                     Kembali ke Explore
@@ -270,7 +276,7 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
                                     </div>
 
                                     <Link 
-                                        href={`/learning/${course.id}`} 
+                                        href={`/learning/${course.slug}`} 
                                         className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95"
                                     >
                                         <PlayCircle size={22} className="group-hover:scale-110 transition-transform"/>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Loader2, LayoutGrid } from "lucide-react";
+import { Search, Loader2, LayoutGrid, Compass } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
 import { api } from "@/lib/api";
 import CourseCard, { CourseType } from "@/components/ui/CourseCard";
@@ -41,7 +41,7 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans pb-20">
       <UserNavbar />
-      
+
       <div className="relative bg-white border-b border-slate-100 overflow-hidden pb-12 pt-10">
          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-50 rounded-full blur-[120px] -mr-20 -mt-20 opacity-60 pointer-events-none" />
          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-50 rounded-full blur-[100px] -ml-20 -mb-20 opacity-60 pointer-events-none" />
@@ -76,6 +76,7 @@ export default function ExplorePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredCourses.map((course, index) => (
                     <div key={course.id} className="h-full">
+
                         <CourseCard course={course} index={index} />
                     </div>
                 ))}
@@ -86,7 +87,7 @@ export default function ExplorePage() {
                     <LayoutGrid size={32} />
                 </div>
                 <h3 className="text-xl font-bold text-slate-800">Tidak ada kursus ditemukan</h3>
-                <p className="text-slate-500 mt-2 max-w-md">
+                <p className="text-slate-500 mt-2 max-w-md mx-auto">
                     {searchQuery 
                         ? `Tidak ada hasil untuk pencarian "${searchQuery}".` 
                         : "Belum ada kursus yang dipublikasikan saat ini."}
