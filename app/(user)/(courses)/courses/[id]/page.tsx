@@ -1,71 +1,144 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
-  ArrowLeft, Clock, BarChart, Globe, Award, PlayCircle, 
-  CheckCircle, Lock, Share2, AlertCircle
+  ArrowLeft, Clock, Globe, Award, PlayCircle, 
+  CheckCircle, Lock, Key, Loader2, Check
 } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import Notification from "@/components/ui/Notification";
 import { api } from "@/lib/api";
 
-export default function CourseEnrollmentPage({ params }: { params: { id: string } }) {
+interface CourseDetail {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string | null;
+  level: string;
+  price: number; 
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+  author?: any;
+  curriculum?: any;
+  learning_points?: string[];
+}
+
+export default function CourseEnrollmentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
+  
+  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const [user, setUser] = useState<any>(null);
+  
   const [isLoading, setIsLoading] = useState(true);
-  const [course, setCourse] = useState<any>(null);
-  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentData, setEnrollmentData] = useState<any>(null);
+  
+  const [accessKey, setAccessKey] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{type: 'success'|'error'|null, message: string}>({
+    type: null, message: ""
+  });
 
   useEffect(() => {
-    const fetchCourseDetail = async () => {
+    const userStr = localStorage.getItem("user");
+    let localUser = null;
+    if (userStr) {
+        localUser = JSON.parse(userStr);
+        setUser(localUser);
+    }
+
+    const initData = async () => {
       try {
         setIsLoading(true);
-        // Simulasi fetch data API
-        // const res = await api.get(`/courses/${params.id}`);
-        // setCourse(res.data);
         
-        // Menggunakan Dummy Data agar tampilan langsung terlihat bagus
-        setTimeout(() => {
-            setCourse(DUMMY_COURSE_DETAIL);
-            setIsLoading(false);
-        }, 1000);
+        const courseRes = await api.get(`/courses/${id}`);
+        if (courseRes.success) {
+            setCourse(courseRes.data);
+        }
+
+        if (localUser && localUser.id) {
+            try {
+                const checkRes = await api.get(`/enrollments/check?user_id=${localUser.id}&course_id=${id}`);
+                if (checkRes.success) {
+                    setIsEnrolled(checkRes.data.is_enrolled);
+                    setEnrollmentData(checkRes.data.enrollment_data);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
 
       } catch (error) {
         console.error(error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchCourseDetail();
-  }, [params.id]);
+    initData();
+  }, [id]);
 
   const handleEnroll = async () => {
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
+    if (!user) {
         router.push("/login");
         return;
     }
 
-    setIsEnrolling(true);
+    if (!accessKey) {
+        setNotification({ type: 'error', message: "Mohon masukkan Kode Akses (Key) untuk mendaftar." });
+        return;
+    }
+
+    setIsSubmitting(true);
     
-    // Simulasi proses enroll
-    setTimeout(() => {
-        setIsEnrolling(false);
-        // Arahkan ke dashboard belajar atau halaman sukses
-        alert("Berhasil mendaftar! Mengarahkan ke kelas...");
-        router.push(`/learning/${params.id}`);
-    }, 1500);
+    try {
+        const payload = {
+            user_id: user.id,
+            course_id: id,
+            used_key: accessKey 
+        };
+
+        const res = await api.post("/enrollments", payload);
+
+        if (res.success) {
+            setIsEnrolled(true);
+            setEnrollmentData(res.data);
+            setNotification({ type: 'success', message: "Pendaftaran berhasil! Selamat belajar." });
+        } else {
+            setNotification({ type: 'error', message: res.message || "Gagal mendaftar. Cek kode akses Anda." });
+        }
+    } catch (error: any) {
+        setNotification({ type: 'error', message: error.message || "Terjadi kesalahan saat mendaftar." });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+            <Loader2 className="animate-spin text-indigo-600" size={40} />
+        </div>
+      );
+  }
+
   if (!course) return null;
 
   return (
     <div className="min-h-screen bg-[#f8faff] font-sans pb-20">
       <UserNavbar />
+      
+      <Notification 
+        type={notification.type} 
+        message={notification.message} 
+        onClose={() => setNotification({ type: null, message: "" })} 
+      />
 
-      {/* --- HEADER SECTION --- */}
       <div className="bg-slate-900 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/30 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-[100px] pointer-events-none" />
@@ -79,199 +152,173 @@ export default function CourseEnrollmentPage({ params }: { params: { id: string 
                 <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-4 leading-tight">
                     {course.title}
                 </h1>
-                <p className="text-lg text-slate-300 mb-6 leading-relaxed">
-                    {course.short_description}
-                </p>
+                <div 
+                    className="text-lg text-slate-300 mb-6 leading-relaxed line-clamp-3 prose prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: course.description || "" }} 
+                />
 
                 <div className="flex flex-wrap items-center gap-4 md:gap-8 text-sm font-medium text-slate-300">
                     <div className="flex items-center gap-2">
-                        <span className="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded text-xs font-bold border border-amber-500/30">
-                            Bestseller
+                        <span className="bg-white/10 text-white px-3 py-1 rounded-full text-xs font-bold border border-white/20 backdrop-blur-md uppercase tracking-wider">
+                            {course.level || "Umum"}
                         </span>
-                        <span className="flex items-center gap-1 text-amber-400 font-bold">
-                            ★ {course.rating}
-                        </span>
-                        <span className="text-slate-500">({course.reviews_count} rating)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Globe size={16} /> Bahasa Indonesia
+                        <Globe size={16} className="text-indigo-400" /> Bahasa Indonesia
                     </div>
                     <div className="flex items-center gap-2">
-                        <Clock size={16} /> Terakhir update {course.updated_at}
+                        <Clock size={16} className="text-indigo-400" /> 
+                        Update: {new Date(course.updated_at).toLocaleDateString('id-ID')}
                     </div>
                 </div>
             </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
             
-            {/* --- LEFT COLUMN (CONTENT) --- */}
             <div className="space-y-8">
-                
-                {/* What you'll learn */}
-                <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
-                    <h3 className="text-xl font-black text-slate-900 mb-6">Apa yang akan Anda pelajari</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {course.learning_points.map((point: string, idx: number) => (
-                            <div key={idx} className="flex items-start gap-3">
-                                <CheckCircle className="text-emerald-500 mt-0.5 shrink-0" size={18} />
-                                <span className="text-sm font-medium text-slate-600 leading-relaxed">{point}</span>
-                            </div>
-                        ))}
-                    </div>
+                <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
+                    <h3 className="text-xl font-black text-slate-900 mb-6">Tentang Kursus Ini</h3>
+                    <div 
+                        className="prose prose-slate prose-sm max-w-none text-slate-600 leading-loose"
+                        dangerouslySetInnerHTML={{ __html: course.description }}
+                    />
                 </div>
 
-                {/* Course Content / Curriculum */}
-                <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-black text-slate-900">Konten Kursus</h3>
-                        <span className="text-sm font-bold text-slate-500">
-                            {course.total_lessons} Pelajaran • {course.duration} Total Durasi
-                        </span>
-                    </div>
-
+                <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
+                    <h3 className="text-xl font-black text-slate-900 mb-6">Materi Pembelajaran</h3>
                     <div className="space-y-3">
-                        {course.curriculum.map((section: any, idx: number) => (
-                            <div key={idx} className="border border-slate-100 rounded-2xl overflow-hidden">
-                                <div className="bg-slate-50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
-                                    <h4 className="font-bold text-slate-800 text-sm">{section.title}</h4>
-                                    <span className="text-xs font-bold text-slate-400">{section.lessons.length} video</span>
-                                </div>
-                                <div className="divide-y divide-slate-50">
-                                    {section.lessons.map((lesson: any, lIdx: number) => (
-                                        <div key={lIdx} className="px-5 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-                                            <div className="flex items-center gap-3">
-                                                {lesson.is_free ? (
-                                                    <PlayCircle size={16} className="text-indigo-600" />
-                                                ) : (
-                                                    <Lock size={16} className="text-slate-300" />
-                                                )}
-                                                <span className={`text-sm font-medium ${lesson.is_free ? 'text-indigo-600 underline decoration-indigo-200' : 'text-slate-600'}`}>
-                                                    {lesson.title}
-                                                </span>
-                                            </div>
-                                            <span className="text-xs text-slate-400 font-medium">{lesson.duration}</span>
-                                        </div>
-                                    ))}
+                        <div className="border border-slate-100 rounded-3xl overflow-hidden">
+                            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                                <h4 className="font-bold text-slate-800 text-sm">Modul Pembelajaran</h4>
+                                <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">Video & Materi</span>
+                            </div>
+                            <div className="divide-y divide-slate-50 px-6 py-6 text-center">
+                                <div className="flex flex-col items-center justify-center py-4 text-slate-400 gap-2">
+                                    <Lock size={24} className="opacity-50" />
+                                    <p className="text-sm font-medium">Silakan daftar untuk membuka akses materi.</p>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Description */}
-                <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
-                    <h3 className="text-xl font-black text-slate-900 mb-4">Deskripsi</h3>
-                    <div className="prose prose-slate prose-sm max-w-none text-slate-600 leading-loose">
-                        <p>{course.full_description}</p>
-                    </div>
-                </div>
-
-                {/* Instructor */}
-                <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
-                    <h3 className="text-xl font-black text-slate-900 mb-6">Instruktur</h3>
-                    <div className="flex flex-col sm:flex-row gap-6">
-                        <div className="relative w-24 h-24 rounded-2xl overflow-hidden shrink-0">
-                            <Image 
-                                src={course.author.avatar_url} 
-                                alt={course.author.name} 
-                                fill 
-                                className="object-cover" 
-                            />
-                        </div>
-                        <div>
-                            <h4 className="text-lg font-bold text-slate-800">{course.author.name}</h4>
-                            <p className="text-sm font-bold text-indigo-600 mb-3">{course.author.title}</p>
-                            <div className="flex items-center gap-4 text-xs font-bold text-slate-500 mb-4">
-                                <span className="flex items-center gap-1"><Award size={14} /> {course.author.reviews} Reviews</span>
-                                <span className="flex items-center gap-1"><PlayCircle size={14} /> {course.author.courses} Kursus</span>
-                            </div>
-                            <p className="text-sm text-slate-600 leading-relaxed">
-                                {course.author.bio}
-                            </p>
                         </div>
                     </div>
                 </div>
-
             </div>
 
-            {/* --- RIGHT COLUMN (STICKY CARD) --- */}
             <div className="lg:relative">
                 <div className="sticky top-24 space-y-6">
                     
-                    {/* Card Pembelian */}
-                    <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                        {/* Thumbnail Video Preview */}
-                        <div className="relative h-48 w-full bg-slate-900 group cursor-pointer">
-                            <Image 
-                                src={course.thumbnail_url} 
-                                alt={course.title} 
-                                fill 
-                                className="object-cover opacity-80 group-hover:opacity-60 transition-opacity"
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <PlayCircle size={32} className="text-white fill-white/20" />
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden ring-1 ring-slate-100/50">
+                        <div className="relative h-52 w-full bg-slate-900">
+                            {course.thumbnail_url ? (
+                                <Image 
+                                    src={course.thumbnail_url} 
+                                    alt={course.title} 
+                                    fill 
+                                    className="object-cover opacity-90"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 opacity-40" />
+                                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                                    <PlayCircle size={56} className="text-white relative z-10 drop-shadow-2xl" />
                                 </div>
-                            </div>
-                            <div className="absolute bottom-4 left-0 right-0 text-center">
-                                <span className="text-white font-bold text-sm drop-shadow-md">Pratinjau Kursus ini</span>
-                            </div>
+                            )}
                         </div>
 
-                        <div className="p-6">
-                            <div className="flex items-end gap-3 mb-6">
-                                <h2 className="text-3xl font-black text-slate-900">
-                                    {course.price === 0 ? "Gratis" : `Rp ${new Intl.NumberFormat('id-ID').format(course.price)}`}
-                                </h2>
-                                {course.price > 0 && (
-                                    <span className="text-sm text-slate-400 line-through font-medium mb-1.5">
-                                        Rp {new Intl.NumberFormat('id-ID').format(course.price * 1.5)}
-                                    </span>
-                                )}
-                            </div>
+                        <div className="p-8">
+                            {isEnrolled ? (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                    <div className="flex items-start gap-4 bg-emerald-50/80 border border-emerald-100 p-5 rounded-3xl">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                                            <Check size={20} strokeWidth={3} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest mb-1">Status Aktif</p>
+                                            <p className="text-sm font-bold text-emerald-900 leading-tight">
+                                                Anda sudah terdaftar di kursus ini.
+                                            </p>
+                                        </div>
+                                    </div>
 
-                            <button 
-                                onClick={handleEnroll}
-                                disabled={isEnrolling}
-                                className="w-full py-4 rounded-xl bg-indigo-600 text-white font-bold text-lg hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/30 transition-all mb-4 flex items-center justify-center gap-2"
-                            >
-                                {isEnrolling ? "Memproses..." : (course.price === 0 ? "Daftar Sekarang" : "Beli Sekarang")}
-                            </button>
+                                    <Link 
+                                        href={`/learning/${id}`} 
+                                        className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95"
+                                    >
+                                        <PlayCircle size={22} className="group-hover:scale-110 transition-transform"/>
+                                        Lihat Modul
+                                    </Link>
+                                    
+                                    {enrollmentData?.progress_percentage >= 0 && (
+                                        <div className="space-y-2 pt-2">
+                                            <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                                <span>Progres Belajar</span>
+                                                <span>{enrollmentData.progress_percentage}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                <div 
+                                                    className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.4)]" 
+                                                    style={{ width: `${enrollmentData.progress_percentage}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                                            Gratis
+                                        </h2>
+                                        <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-500 text-xs font-bold border border-rose-100 line-through decoration-rose-500/50">
+                                            Premium
+                                        </span>
+                                    </div>
 
-                            <p className="text-xs text-slate-500 text-center mb-6 font-medium">Jaminan 30-hari uang kembali</p>
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">
+                                            Kode Akses
+                                        </label>
+                                        <div className="relative group">
+                                            <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-indigo-500 group-focus-within:text-indigo-600 transition-colors">
+                                                <Key size={20} />
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Masukkan kode unik..."
+                                                className="w-full h-14 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 outline-none text-sm placeholder:text-slate-400 placeholder:font-normal"
+                                                value={accessKey}
+                                                onChange={(e) => setAccessKey(e.target.value)}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 px-1 font-medium">
+                                            *Diperlukan untuk validasi pendaftaran.
+                                        </p>
+                                    </div>
 
-                            <div className="space-y-4">
-                                <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Kursus ini mencakup:</h4>
-                                <ul className="space-y-3">
-                                    <li className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                                        <PlayCircle size={16} className="text-slate-400" /> {course.duration} on-demand video
-                                    </li>
-                                    <li className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                                        <Lock size={16} className="text-slate-400" /> Akses seumur hidup penuh
-                                    </li>
-                                    <li className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                                        <Award size={16} className="text-slate-400" /> Sertifikat penyelesaian
-                                    </li>
-                                </ul>
-                            </div>
-                            
-                            <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-center">
-                                <button className="text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors">Bagikan</button>
-                                <button className="text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors">Gift Course</button>
+                                    <button 
+                                        onClick={handleEnroll}
+                                        disabled={isSubmitting}
+                                        className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-bold text-lg hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-95"
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <Loader2 className="animate-spin" size={22} /> Memproses...
+                                            </>
+                                        ) : (
+                                            "Daftar Sekarang"
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+                                <p className="text-xs text-slate-400 font-bold flex items-center justify-center gap-2 bg-slate-50 py-2 rounded-lg">
+                                    <Award size={14} className="text-amber-500" /> Sertifikat Kelulusan Digital
+                                </p>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Card Business (Optional) */}
-                    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                        <h4 className="font-bold text-slate-900 text-sm mb-1">Training 5 orang atau lebih?</h4>
-                        <p className="text-xs text-slate-500 mb-3">Dapatkan akses tim ke 5,000+ kursus top kapan saja.</p>
-                        <button className="w-full py-2.5 rounded-lg border border-slate-900 text-slate-900 font-bold text-xs hover:bg-slate-50 transition-colors">
-                            LISAN for Business
-                        </button>
                     </div>
 
                 </div>
@@ -282,53 +329,3 @@ export default function CourseEnrollmentPage({ params }: { params: { id: string 
     </div>
   );
 }
-
-// --- DUMMY DATA ---
-const DUMMY_COURSE_DETAIL = {
-    id: "1",
-    title: "Web Development dengan Next.js 14: Dari Nol sampai Mahir",
-    short_description: "Bangun aplikasi web modern yang cepat, scalable, dan SEO-friendly menggunakan framework React paling populer saat ini.",
-    full_description: "Dalam kursus ini, Anda akan mempelajari segala hal yang dibutuhkan untuk menjadi pengembang Next.js yang handal. Dimulai dari konsep dasar React, Server Components, Routing, hingga deployment ke Vercel. Cocok untuk pemula yang sudah paham dasar HTML/CSS/JS.",
-    thumbnail_url: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=800&auto=format&fit=crop",
-    price: 150000,
-    rating: 4.8,
-    reviews_count: 452,
-    updated_at: "Desember 2025",
-    total_lessons: 24,
-    duration: "12 Jam",
-    learning_points: [
-        "Memahami App Router di Next.js 14",
-        "Menggunakan Server Actions untuk mutasi data",
-        "Integrasi dengan Database (Supabase/Prisma)",
-        "Optimasi gambar dan font secara otomatis",
-        "Autentikasi user dengan NextAuth",
-        "Deployment aplikasi ke production"
-    ],
-    curriculum: [
-        {
-            title: "Pengenalan Next.js",
-            lessons: [
-                { title: "Apa itu Next.js?", duration: "05:00", is_free: true },
-                { title: "Setup Project Pertama", duration: "10:00", is_free: true },
-                { title: "Struktur Folder App Router", duration: "15:00", is_free: false }
-            ]
-        },
-        {
-            title: "Routing & Navigation",
-            lessons: [
-                { title: "Pages & Layouts", duration: "12:00", is_free: false },
-                { title: "Dynamic Routes", duration: "18:00", is_free: false },
-                { title: "Loading UI & Streaming", duration: "14:00", is_free: false }
-            ]
-        }
-    ],
-    author: {
-        name: "Budi Santoso",
-        title: "Senior Frontend Engineer",
-        avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop",
-        students: "12,400",
-        reviews: "3,200",
-        courses: "8",
-        bio: "Budi adalah seorang engineer berpengalaman dengan lebih dari 10 tahun di industri teknologi. Ia bersemangat membagikan ilmunya tentang web development modern."
-    }
-};

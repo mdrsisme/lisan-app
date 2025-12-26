@@ -7,12 +7,13 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   Mail, User as UserIcon, Shield, Calendar, 
   Hash, Lock, Award, Zap, 
-  Copy, RefreshCw, Check, LayoutGrid, Users, List, Sparkles, Fingerprint
+  Copy, RefreshCw, Check, LayoutGrid, Users, List, BookOpen, Fingerprint, ChevronRight
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { themeColors } from "@/lib/color";
+import Link from "next/link"; 
 
 type UserDetail = {
   id: string;
@@ -41,7 +42,6 @@ export default function UserDetailPage() {
   const oceanGradient = "bg-gradient-to-br from-[#3b82f6] to-[#10b981]";
   const textOcean = "text-[#06b6d4]";
   const bgLight = "bg-[#ecfeff]";
-  const borderFocus = "border-[#06b6d4]/30";
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -87,7 +87,7 @@ export default function UserDetailPage() {
       <AdminLayout>
         <div className="flex flex-col items-center justify-center h-[70vh] text-center">
           <div className={`w-24 h-24 ${bgLight} rounded-[2rem] flex items-center justify-center mb-6`}>
-             <UserIcon size={40} className={textOcean} />
+              <UserIcon size={40} className={textOcean} />
           </div>
           <h2 className="text-2xl font-black text-slate-800 mb-2">User Tidak Ditemukan</h2>
           <p className="text-slate-400 mb-8">Kami tidak dapat menemukan data user dengan ID tersebut.</p>
@@ -106,21 +106,22 @@ export default function UserDetailPage() {
     <AdminLayout>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
+        {/* Page Header */}
         <PageHeader
-          theme={themeColors.ocean}
-          title="Detail Akun"
-          highlight={user.username}
-          description={`ID: ${user.id}`}
-          breadcrumbs={[
-            { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
-            { label: "Pengguna", href: "/admin/users", icon: Users },
-            { label: "Database", href: "/admin/users", icon: List },
-            { label: user.username, active: true, icon: UserIcon },
-          ]}
+            theme={themeColors.ocean}
+            title="Detail Akun"
+            highlight={user.username}
+            description={`ID: ${user.id}`}
+            breadcrumbs={[
+                { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
+                { label: "Pengguna", href: "/admin/users", icon: Users },
+                { label: user.username, active: true, icon: UserIcon },
+            ]}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
+           {/* --- LEFT COLUMN: PROFILE CARD --- */}
            <div className="lg:col-span-4 flex flex-col gap-6">
               <div className="relative bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden p-8 text-center group hover:border-[#06b6d4]/30 transition-all duration-300">
 
@@ -159,18 +160,18 @@ export default function UserDetailPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2 justify-center w-full">
-                       <span className={`px-4 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-wide border ${
+                        <span className={`px-4 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-wide border ${
                           user.role === 'admin' 
                             ? 'bg-slate-900 text-white border-slate-900 shadow-md shadow-slate-900/20' 
                             : 'bg-white text-slate-500 border-slate-200 shadow-sm'
-                       }`}>
+                        }`}>
                           {user.role}
-                       </span>
-                       {user.is_premium && (
+                        </span>
+                        {user.is_premium && (
                           <span className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-extrabold uppercase tracking-wide flex items-center gap-1 shadow-md shadow-orange-500/20">
-                             <Sparkles size={12} fill="currentColor" /> Premium
+                             <Zap size={12} fill="currentColor" /> Premium
                           </span>
-                       )}
+                        )}
                     </div>
                  </div>
               </div>
@@ -195,7 +196,8 @@ export default function UserDetailPage() {
            </div>
 
            <div className="lg:col-span-8 flex flex-col gap-6 h-full">
-              <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 flex-1 hover:border-[#06b6d4]/30 transition-all">
+              
+              <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 hover:border-[#06b6d4]/30 transition-all">
                  <div className="flex items-center justify-between mb-8">
                     <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wide">
                        <Fingerprint size={18} className={textOcean} /> Informasi Pribadi
@@ -267,6 +269,34 @@ export default function UserDetailPage() {
                     </button>
                  </div>
               </div>
+
+              <div className="relative bg-slate-900 rounded-[2.5rem] p-8 overflow-hidden shadow-2xl group cursor-pointer">
+                  
+                  <div className="absolute -top-10 -right-10 w-48 h-48 bg-cyan-500 rounded-full blur-[80px] opacity-40 group-hover:opacity-60 transition-opacity duration-700 animate-pulse" />
+                  <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-emerald-500 rounded-full blur-[80px] opacity-40 group-hover:opacity-60 transition-opacity duration-700" />
+                  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
+
+                  <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="flex items-center gap-5">
+                          <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-cyan-400 shadow-lg group-hover:scale-110 transition-transform duration-500">
+                              <BookOpen size={28} />
+                          </div>
+                          <div>
+                              <h3 className="text-xl font-black text-white tracking-tight mb-1">Manajemen Kursus</h3>
+                              <p className="text-slate-400 text-sm font-medium">Atur akses enrollment & progres belajar user ini.</p>
+                          </div>
+                      </div>
+
+                      <Link 
+                        href={`/admin/users/${user.id}/enrollments`}
+                        className="w-full md:w-auto px-8 py-3.5 rounded-2xl bg-white text-slate-900 font-bold text-sm hover:bg-cyan-50 transition-colors shadow-lg flex items-center justify-center gap-2 group/btn"
+                      >
+                        Kelola Enrollment
+                        <ChevronRight size={16} className="text-slate-400 group-hover/btn:text-cyan-600 transition-colors group-hover/btn:translate-x-1 duration-300" />
+                      </Link>
+                  </div>
+              </div>
+
            </div>
 
         </div>
