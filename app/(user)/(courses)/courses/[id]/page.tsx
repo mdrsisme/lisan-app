@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, Clock, Globe, Award, PlayCircle, 
-  CheckCircle, Lock, Key, Loader2, Check
+  Check, Key, Loader2, Lock, AlertCircle
 } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
 import Notification from "@/components/ui/Notification";
@@ -15,6 +15,7 @@ import { api } from "@/lib/api";
 interface CourseDetail {
   id: string;
   title: string;
+  slug: string;
   description: string;
   thumbnail_url: string | null;
   level: string;
@@ -27,6 +28,7 @@ interface CourseDetail {
   learning_points?: string[];
 }
 
+// Params sekarang menggunakan ID
 export default function CourseEnrollmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -44,6 +46,8 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
     type: null, message: ""
   });
 
+  const [fetchError, setFetchError] = useState(false);
+
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     let localUser = null;
@@ -55,26 +59,33 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
     const initData = async () => {
       try {
         setIsLoading(true);
-        
+        setFetchError(false);
+    
+        // Fetch Course langsung pakai ID
         const courseRes = await api.get(`/courses/${id}`);
-        if (courseRes.success) {
-            setCourse(courseRes.data);
-        }
+        
+        if (courseRes.success && courseRes.data) {
+            const courseData = courseRes.data;
+            setCourse(courseData);
 
-        if (localUser && localUser.id) {
-            try {
-                const checkRes = await api.get(`/enrollments/check?user_id=${localUser.id}&course_id=${id}`);
-                if (checkRes.success) {
-                    setIsEnrolled(checkRes.data.is_enrolled);
-                    setEnrollmentData(checkRes.data.enrollment_data);
+            if (localUser && localUser.id) {
+                try {
+                    const checkRes = await api.get(`/enrollments/check?user_id=${localUser.id}&course_id=${id}`);
+                    if (checkRes.success) {
+                        setIsEnrolled(checkRes.data.is_enrolled);
+                        setEnrollmentData(checkRes.data.enrollment_data);
+                    }
+                } catch (err) {
+                    console.error("Error checking enrollment:", err);
                 }
-            } catch (err) {
-                console.error(err);
             }
+        } else {
+            setFetchError(true);
         }
 
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching course:", error);
+        setFetchError(true);
       } finally {
         setIsLoading(false);
       }
@@ -89,31 +100,29 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
         return;
     }
 
+    if (!course?.id) return;
+
     if (!accessKey) {
-        setNotification({ type: 'error', message: "Mohon masukkan Kode Akses (Key) untuk mendaftar." });
+        setNotification({ type: 'error', message: "Mohon masukkan Kode Akses (Key)." });
         return;
     }
-
     setIsSubmitting(true);
-    
     try {
         const payload = {
             user_id: user.id,
-            course_id: id,
+            course_id: course.id,
             used_key: accessKey 
         };
-
         const res = await api.post("/enrollments", payload);
-
         if (res.success) {
             setIsEnrolled(true);
             setEnrollmentData(res.data);
-            setNotification({ type: 'success', message: "Pendaftaran berhasil! Selamat belajar." });
+            setNotification({ type: 'success', message: "Pendaftaran berhasil!" });
         } else {
-            setNotification({ type: 'error', message: res.message || "Gagal mendaftar. Cek kode akses Anda." });
+            setNotification({ type: 'error', message: res.message || "Gagal mendaftar." });
         }
     } catch (error: any) {
-        setNotification({ type: 'error', message: error.message || "Terjadi kesalahan saat mendaftar." });
+        setNotification({ type: 'error', message: error.message || "Terjadi kesalahan." });
     } finally {
         setIsSubmitting(false);
     }
@@ -127,7 +136,25 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
       );
   }
 
-  if (!course) return null;
+  if (fetchError || !course) {
+      return (
+        <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col">
+            <UserNavbar />
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-400">
+                    <AlertCircle size={40} />
+                </div>
+                <h1 className="text-2xl font-bold text-slate-900 mb-2">Kursus Tidak Ditemukan</h1>
+                <p className="text-slate-500 max-w-md mb-8">
+                    Kursus dengan ID tersebut tidak ditemukan.
+                </p>
+                <Link href="/explore" className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">
+                    Kembali ke Explore
+                </Link>
+            </div>
+        </div>
+      );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8faff] font-sans pb-20">
@@ -166,10 +193,12 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
                     <div className="flex items-center gap-2">
                         <Globe size={16} className="text-indigo-400" /> Bahasa Indonesia
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Clock size={16} className="text-indigo-400" /> 
-                        Update: {new Date(course.updated_at).toLocaleDateString('id-ID')}
-                    </div>
+                    {course.updated_at && (
+                        <div className="flex items-center gap-2">
+                            <Clock size={16} className="text-indigo-400" /> 
+                            Update: {new Date(course.updated_at).toLocaleDateString('id-ID')}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -243,7 +272,7 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ id:
                                     </div>
 
                                     <Link 
-                                        href={`/learning/${id}`} 
+                                        href={`/learning/${course.id}`} 
                                         className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95"
                                     >
                                         <PlayCircle size={22} className="group-hover:scale-110 transition-transform"/>

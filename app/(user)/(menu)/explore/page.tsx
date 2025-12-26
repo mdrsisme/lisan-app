@@ -1,16 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { 
-  Search, Loader2, Sparkles, LayoutGrid 
-} from "lucide-react";
+import { Search, Loader2, LayoutGrid } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
 import { api } from "@/lib/api";
 import CourseCard, { CourseType } from "@/components/ui/CourseCard";
 
 export default function ExplorePage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [courses, setCourses] = useState<CourseType[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,7 +26,7 @@ export default function ExplorePage() {
         setCourses([]); 
       }
     } catch (error) {
-      console.error(error);
+      console.error("Gagal memuat kursus:", error);
       setCourses([]); 
     } finally {
         setIsLoading(false);
@@ -51,7 +47,6 @@ export default function ExplorePage() {
          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-50 rounded-full blur-[100px] -ml-20 -mb-20 opacity-60 pointer-events-none" />
          
          <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 text-center">
-            
             <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-10 tracking-tight">
                 Jelajahi <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">Ilmu Tanpa Batas</span>
             </h1>
@@ -99,7 +94,6 @@ export default function ExplorePage() {
             </div>
         )}
       </div>
-
     </div>
   );
 }

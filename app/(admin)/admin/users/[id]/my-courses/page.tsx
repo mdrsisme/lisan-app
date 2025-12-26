@@ -1,0 +1,238 @@
+"use client";
+
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { 
+  Search, Loader2, BookOpen, LayoutGrid, Users, User, Trash2, Award, PlusCircle
+} from "lucide-react";
+import { api } from "@/lib/api";
+import Notification from "@/components/ui/Notification";
+import AdminLayout from "@/components/layouts/AdminLayout";
+import PageHeader from "@/components/ui/PageHeader";
+import { themeColors } from "@/lib/color";
+
+interface Course {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  level: string;
+  slug: string;
+}
+
+interface Enrollment {
+  id: string;
+  status: 'active' | 'completed' | 'dropped';
+  progress_percentage: number;
+  courses: Course;
+  created_at: string;
+}
+
+interface UserDetail {
+  id: string;
+  full_name: string;
+  username: string;
+  email: string;
+  role: string;
+  avatar_url: string | null;
+}
+
+export default function AdminUserMyCoursesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params); 
+  const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  
+  const [user, setUser] = useState<UserDetail | null>(null);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [notification, setNotification] = useState<{type: 'success'|'error'|null, message: string}>({
+    type: null, message: ""
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, [id]);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      
+      const [userRes, enrollmentsRes] = await Promise.all([
+        api.get(`/users/${id}`),
+        api.get(`/enrollments/user/${id}`) 
+      ]);
+
+      if (userRes.success) setUser(userRes.data);
+      if (enrollmentsRes.success) setEnrollments(enrollmentsRes.data);
+
+    } catch (error) {
+      console.error(error);
+      setNotification({ type: 'error', message: "Gagal memuat data." });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteEnrollment = async (enrollmentId: string) => {
+    if (!confirm("Hapus akses user ke kursus ini? Progress akan hilang.")) return;
+
+    setProcessingId(enrollmentId);
+    try {
+      const res = await api.delete(`/enrollments/${enrollmentId}`);
+
+      if (res.success) {
+        setNotification({ type: 'success', message: "Akses dicabut." });
+        setEnrollments(prev => prev.filter(e => e.id !== enrollmentId));
+      } else {
+        throw new Error(res.message);
+      }
+    } catch (error: any) {
+      setNotification({ type: 'error', message: error.message || "Gagal menghapus enrollment." });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const filteredEnrollments = enrollments.filter(e => 
+    e.courses?.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getProgressColor = (percent: number) => {
+    if (percent === 100) return "bg-emerald-500";
+    if (percent > 50) return "bg-cyan-500";
+    return "bg-amber-500";
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        
+        <Notification 
+            type={notification.type} 
+            message={notification.message} 
+            onClose={() => setNotification({ type: null, message: "" })} 
+        />
+
+        {user && (
+            <PageHeader
+                theme={themeColors.ocean}
+                title="Kursus Dimiliki User"
+                highlight={user.username}
+                description={`List kursus aktif milik ${user.full_name}`}
+                breadcrumbs={[
+                    { label: "User", href: `/admin/users/${id}`, icon: User },
+                    { label: "My Courses", active: true, icon: BookOpen },
+                ]}
+            />
+        )}
+
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full md:w-96">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                    type="text"
+                    placeholder="Cari kursus user..."
+                    className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border border-slate-200 shadow-sm outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            {/* Link ke halaman Enrollments (Katalog) */}
+            <Link 
+                href={`/admin/users/${id}/enrollments`}
+                className="flex items-center gap-2 px-6 py-3 bg-cyan-600 text-white rounded-xl font-bold hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-500/20"
+            >
+                <PlusCircle size={20} /> Daftarkan Kursus Baru
+            </Link>
+        </div>
+
+        {isLoading ? (
+             <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="animate-spin text-cyan-600 mb-4" size={40} />
+                <p className="text-slate-500 font-medium">Memuat data...</p>
+             </div>
+        ) : filteredEnrollments.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEnrollments.map((enrollment) => {
+                    const isProcessing = processingId === enrollment.id;
+                    return (
+                        <div key={enrollment.id} className="group relative bg-white rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
+                            <div className="h-40 w-full relative bg-slate-900 overflow-hidden">
+                                {enrollment.courses?.thumbnail_url ? (
+                                    <Image 
+                                        src={enrollment.courses.thumbnail_url} 
+                                        alt={enrollment.courses.title} 
+                                        fill 
+                                        className="object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
+                                )}
+                                <div className="absolute top-4 left-4 flex gap-2">
+                                    <span className="bg-black/40 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-white/10">
+                                        {enrollment.courses?.level}
+                                    </span>
+                                    {enrollment.status === 'completed' && (
+                                        <span className="bg-emerald-500 text-white p-1 rounded-lg shadow-lg"><Award size={14} /></span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="p-6 flex-1 flex flex-col">
+                                <h3 className="text-lg font-bold text-slate-800 mb-4 line-clamp-2 leading-snug">
+                                    {enrollment.courses?.title}
+                                </h3>
+                                <div className="mb-6">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="text-xs font-bold text-slate-400 uppercase">Progress</span>
+                                        <span className="text-sm font-bold text-slate-800">{enrollment.progress_percentage}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full rounded-full ${getProgressColor(enrollment.progress_percentage)}`}
+                                            style={{ width: `${enrollment.progress_percentage}%` }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between gap-3">
+                                    <div className="text-xs text-slate-400 font-medium">
+                                        Join: {new Date(enrollment.created_at).toLocaleDateString('id-ID')}
+                                    </div>
+                                    <button 
+                                        onClick={() => handleDeleteEnrollment(enrollment.id)}
+                                        disabled={isProcessing}
+                                        className="p-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition-colors disabled:opacity-50"
+                                        title="Hapus Akses"
+                                    >
+                                        {isProcessing ? <Loader2 size={18} className="animate-spin"/> : <Trash2 size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        ) : (
+            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[3rem] border border-slate-200 border-dashed text-center">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                    <BookOpen size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-slate-800">User belum memiliki kursus</h3>
+                <p className="text-slate-500 mt-2 mb-6">User ini belum terdaftar di kursus manapun.</p>
+                <Link 
+                    href={`/admin/users/${id}/enrollments`}
+                    className="flex items-center gap-2 px-6 py-3 bg-cyan-600 text-white rounded-xl font-bold hover:bg-cyan-700 transition-colors"
+                >
+                    <PlusCircle size={18} /> Daftarkan Kursus Sekarang
+                </Link>
+            </div>
+        )}
+      </div>
+    </AdminLayout>
+  );
+}

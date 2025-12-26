@@ -7,7 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   Mail, User as UserIcon, Shield, Calendar, 
   Hash, Lock, Award, Zap, 
-  Copy, RefreshCw, Check, LayoutGrid, Users, List, BookOpen, Fingerprint, ChevronRight
+  Copy, RefreshCw, Check, LayoutGrid, Users, BookOpen, Fingerprint, ChevronRight
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
@@ -121,7 +121,6 @@ export default function UserDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-           {/* --- LEFT COLUMN: PROFILE CARD --- */}
            <div className="lg:col-span-4 flex flex-col gap-6">
               <div className="relative bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden p-8 text-center group hover:border-[#06b6d4]/30 transition-all duration-300">
 
@@ -288,7 +287,7 @@ export default function UserDetailPage() {
                       </div>
 
                       <Link 
-                        href={`/admin/users/${user.id}/enrollments`}
+                        href={`/admin/users/${user.id}/my-courses`}
                         className="w-full md:w-auto px-8 py-3.5 rounded-2xl bg-white text-slate-900 font-bold text-sm hover:bg-cyan-50 transition-colors shadow-lg flex items-center justify-center gap-2 group/btn"
                       >
                         Kelola Enrollment

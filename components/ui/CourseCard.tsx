@@ -2,26 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { 
-  BookOpen, Clock, Star, PlayCircle 
-} from "lucide-react";
+import { PlayCircle } from "lucide-react";
 
 export interface CourseType {
   id: string;
   title: string;
+  slug: string;
   description: string | null;
   thumbnail_url: string | null;
   level: string;
-  author?: {
-    full_name: string;
-    avatar_url: string | null;
-  };
-  stats?: {
-    rating: number;
-    students: number;
-    lessons: number;
-    duration: string;
-  };
+  is_published: boolean;
 }
 
 const GRADIENTS = [
@@ -42,11 +32,10 @@ export default function CourseCard({ course, index }: CourseCardProps) {
   const activeGradient = GRADIENTS[index % GRADIENTS.length];
 
   return (
-    <Link 
+    <Link
       href={`/courses/${course.id}`}
       className="group flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 h-full overflow-hidden"
     >
-
       <div className="relative w-full aspect-[16/9] bg-slate-900 overflow-hidden">
         {course.thumbnail_url ? (
           <div className="relative w-full h-full">
@@ -63,8 +52,9 @@ export default function CourseCard({ course, index }: CourseCardProps) {
             <div className={`absolute -top-10 -left-10 w-32 h-32 bg-gradient-to-br ${activeGradient} rounded-full blur-[50px] opacity-60 animate-pulse`} />
             <div className={`absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-tl ${activeGradient} rounded-full blur-[50px] opacity-60`} />
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+            
             <div className="relative z-10 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-              <PlayCircle size={24} />
+                <PlayCircle size={24} />
             </div>
           </div>
         )}
@@ -76,48 +66,18 @@ export default function CourseCard({ course, index }: CourseCardProps) {
 
       <div className="flex-1 p-5 flex flex-col">
         <div className="flex-1 mb-4">
-            <h3 className="text-lg font-bold text-slate-900 leading-snug mb-1.5 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+          <h3 className="text-lg font-bold text-slate-900 leading-snug mb-1.5 line-clamp-2 group-hover:text-indigo-600 transition-colors">
             {course.title}
-            </h3>
-            <p className="text-slate-500 text-xs line-clamp-2 leading-relaxed">
+          </h3>
+          <p className="text-slate-500 text-xs line-clamp-3 leading-relaxed">
             {course.description || "Belajar hal baru dan tingkatkan skill Anda."}
-            </p>
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-400 mb-4 border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-1">
-                <BookOpen size={12} className="text-indigo-500" />
-                {course.stats?.lessons || 10} Modul
-            </div>
-            <div className="flex items-center gap-1">
-                <Clock size={12} className="text-indigo-500" />
-                {course.stats?.duration || "Video"}
-            </div>
-            <div className="flex items-center gap-1 ml-auto">
-                <Star size={12} className="text-amber-400 fill-amber-400" />
-                {course.stats?.rating || 5.0}
-            </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 overflow-hidden relative">
-                    {course.author?.avatar_url ? (
-                        <Image src={course.author.avatar_url} alt="Author" fill className="object-cover" />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-500 text-[9px] font-bold">
-                            {course.author?.full_name?.charAt(0) || "A"}
-                        </div>
-                    )}
-                </div>
-                <span className="text-xs font-bold text-slate-600 truncate max-w-[90px]">
-                    {course.author?.full_name || "Admin"}
-                </span>
-            </div>
-
-            <span className="text-indigo-600 font-bold text-xs bg-indigo-50 px-3 py-1.5 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                Detail
-            </span>
+        <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-50">
+          <span className="text-indigo-600 font-bold text-xs bg-indigo-50 px-3 py-1.5 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+            Mulai Belajar
+          </span>
         </div>
       </div>
     </Link>
