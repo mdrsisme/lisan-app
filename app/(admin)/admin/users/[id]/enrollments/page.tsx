@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { 
-  Search, Plus, Loader2, Users, User, CheckCircle, ArrowLeft, X, Key, Unlock, LayoutGrid, BookOpen
+  Search, Plus, Loader2, BookOpen, Users, User, CheckCircle, ArrowLeft, X, Key, Unlock, LayoutGrid
 } from "lucide-react";
 import { api } from "@/lib/api";
 import Notification from "@/components/ui/Notification";
@@ -34,15 +34,6 @@ interface UserDetail {
   username: string;
   email: string;
 }
-
-const GRADIENTS = [
-  "from-violet-600 to-indigo-600",
-  "from-pink-500 to-rose-500",
-  "from-cyan-500 to-blue-500",
-  "from-emerald-500 to-teal-500",
-  "from-amber-500 to-orange-500",
-  "from-fuchsia-600 to-purple-600",
-];
 
 export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params); 
@@ -191,41 +182,22 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
              </div>
         ) : filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCourses.map((course, index) => {
+                {filteredCourses.map((course) => {
                     const isAlreadyEnrolled = existingCourseIds.has(course.id);
-                    const activeGradient = GRADIENTS[index % GRADIENTS.length];
 
                     return (
                         <div key={course.id} className={`group relative bg-white rounded-[2rem] border shadow-sm transition-all duration-300 overflow-hidden flex flex-col ${isAlreadyEnrolled ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200 hover:shadow-xl'}`}>
-                            <div className="h-44 w-full relative bg-slate-900 overflow-hidden">
+                            <div className="h-40 w-full relative bg-slate-900 overflow-hidden">
                                 {course.thumbnail_url ? (
-                                    <>
-                                        <Image 
-                                            src={course.thumbnail_url} 
-                                            alt={course.title} 
-                                            fill 
-                                            className={`object-cover transition-transform duration-500 ${isAlreadyEnrolled ? 'opacity-60 grayscale' : 'opacity-90 group-hover:scale-105'}`}
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-                                    </>
+                                    <Image 
+                                        src={course.thumbnail_url} 
+                                        alt={course.title} 
+                                        fill 
+                                        className={`object-cover transition-transform duration-500 ${isAlreadyEnrolled ? 'opacity-60 grayscale' : 'opacity-90 group-hover:scale-105'}`}
+                                    />
                                 ) : (
-                                    <div className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden bg-slate-900">
-                                        {isAlreadyEnrolled ? (
-                                             <div className="absolute inset-0 bg-slate-800" />
-                                        ) : (
-                                            <>
-                                                <div className={`absolute -top-10 -left-10 w-32 h-32 bg-gradient-to-br ${activeGradient} rounded-full blur-[50px] opacity-60 animate-pulse`} />
-                                                <div className={`absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-tl ${activeGradient} rounded-full blur-[50px] opacity-60`} />
-                                                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-                                            </>
-                                        )}
-                                        
-                                        <div className="relative z-10 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-lg">
-                                            <BookOpen size={24} />
-                                        </div>
-                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
                                 )}
-
                                 <div className="absolute top-4 left-4">
                                     <span className="bg-black/40 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-white/10">{course.level}</span>
                                 </div>
@@ -237,7 +209,7 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
                             </div>
 
                             <div className="p-6 flex-1 flex flex-col">
-                                <h3 className={`text-lg font-bold mb-2 line-clamp-2 leading-snug min-h-[3.5rem] ${isAlreadyEnrolled ? 'text-slate-500' : 'text-slate-800'}`}>{course.title}</h3>
+                                <h3 className={`text-lg font-bold mb-2 line-clamp-2 leading-snug ${isAlreadyEnrolled ? 'text-slate-500' : 'text-slate-800'}`}>{course.title}</h3>
                                 <div className="mt-auto pt-6 border-t border-slate-50/50">
                                     {isAlreadyEnrolled ? (
                                         <button disabled className="w-full py-3 rounded-xl bg-slate-100 text-slate-400 font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed border border-slate-200">
@@ -246,7 +218,7 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
                                     ) : (
                                         <button 
                                             onClick={() => handleOpenModal(course)}
-                                            className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold text-sm hover:bg-violet-500 hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95 shadow-violet-500/20"
+                                            className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold text-sm hover:bg-violet-500 hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
                                         >
                                             <Plus size={18} strokeWidth={3} /> Daftarkan User
                                         </button>
@@ -276,18 +248,16 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
                     
                     <div className="p-6 space-y-6">
                         <div className="flex gap-4 items-start">
-                            <div className="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200 shadow-sm">
+                            <div className="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden relative shrink-0 border border-slate-200">
                                 {selectedCourse.thumbnail_url ? (
                                     <Image src={selectedCourse.thumbnail_url} alt={selectedCourse.title} fill className="object-cover" />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
-                                        <BookOpen size={24} className="text-violet-300" />
-                                    </div>
+                                    <div className="w-full h-full bg-slate-200" />
                                 )}
                             </div>
                             <div>
                                 <h4 className="font-bold text-slate-800 line-clamp-2 leading-tight">{selectedCourse.title}</h4>
-                                <span className="text-xs text-slate-500 font-medium mt-1 block uppercase tracking-wide">{selectedCourse.level}</span>
+                                <span className="text-xs text-slate-500 font-medium mt-1 block">{selectedCourse.level}</span>
                             </div>
                         </div>
 
@@ -320,7 +290,7 @@ export default function AdminUserEnrollPage({ params }: { params: Promise<{ id: 
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-emerald-800">Kursus Publik</p>
-                                        <p className="text-xs text-emerald-600 mt-0.5 leading-relaxed">
+                                        <p className="text-xs text-emerald-600 mt-0.5">
                                             Kursus ini tidak memerlukan Access Key. User bisa langsung didaftarkan.
                                         </p>
                                     </div>

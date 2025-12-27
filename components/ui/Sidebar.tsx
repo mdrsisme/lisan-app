@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   LayoutGrid,
   Sparkles,
-  X
+  X,
+  CheckCircle2
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
@@ -68,7 +69,6 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onLogoutClick: () => void;
-  // Prop userData tetap ada sebagai inisial/fallback
   userData: {
     name: string;
     role: string;
@@ -82,14 +82,11 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
   const router = useRouter();
   const pathname = usePathname();
   
-  // State lokal untuk user data (agar bisa diupdate dari localStorage)
   const [localUser, setLocalUser] = useState<any>(initialData);
-  
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isModeModalOpen, setIsModeModalOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Ambil data terbaru dari LocalStorage saat komponen mount
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
@@ -118,7 +115,6 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
     router.push(target);
   };
 
-  // Helper Avatar Component
   const UserAvatar = ({ className, size = "sm" }: { className?: string, size?: "sm" | "lg" }) => {
     const fontSize = size === "lg" ? "text-xl" : "text-xs";
     return (
@@ -160,7 +156,6 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
             </button>
           </div>
 
-          {/* Menu Items */}
           <div className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar">
             {menuGroups.map((group) => (
               <div key={group.label}>
@@ -181,16 +176,10 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
                               : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                             }`}
                         >
-                          {/* --- Modern Glow Orbs Effect --- */}
                           {isActive && (
                             <>
-                              {/* Orb Kiri Atas (Lebih Terang) */}
                               <div className={`absolute -top-6 -left-6 w-20 h-20 rounded-full blur-[30px] opacity-70 ${group.theme.gradient}`} />
-                              
-                              {/* Orb Kanan Bawah (Lebih Terang) */}
                               <div className={`absolute -bottom-6 -right-6 w-20 h-20 rounded-full blur-[30px] opacity-70 ${group.theme.gradient}`} />
-                              
-                              {/* Overlay halus untuk meratakan warna */}
                               <div className="absolute inset-0 bg-slate-900/40 z-0" />
                             </>
                           )}
@@ -216,11 +205,9 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
             ))}
           </div>
 
-          {/* Footer User Profile */}
           <div className="p-5 border-t border-slate-100 bg-white">
             <div className="relative" ref={profileMenuRef}>
-                
-                {/* Trigger Button */}
+
                 <div 
                     className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 cursor-pointer group"
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -241,11 +228,9 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
                     </div>
                 </div>
 
-                {/* --- COOL POP-UP MENU --- */}
                 {isProfileMenuOpen && (
                   <div className="absolute bottom-[115%] left-0 w-full min-w-[270px] bg-white/90 backdrop-blur-xl rounded-[1.5rem] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)] border border-white/50 p-2 z-50 animate-in slide-in-from-bottom-3 fade-in duration-300 ring-1 ring-slate-200/50">
                     
-                    {/* Header Gradient */}
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 mb-2 shadow-inner">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/20 rounded-full blur-[30px]" />
                         <div className="absolute bottom-0 left-0 w-20 h-20 bg-fuchsia-500/20 rounded-full blur-[30px]" />
@@ -300,80 +285,65 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
         </div>
       </aside>
 
-      {/* --- MODAL SELECT MODE --- */}
       {isModeModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden relative animate-in zoom-in-95 duration-300 ring-1 ring-white/20">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden relative animate-in zoom-in-95 duration-300 ring-1 ring-white/20">
             
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className={`absolute -top-20 -right-20 w-60 h-60 rounded-full blur-[80px] opacity-20 ${themeColors.solar.gradient}`} />
-                <div className={`absolute -bottom-20 -left-20 w-60 h-60 rounded-full blur-[80px] opacity-20 ${themeColors.ocean.gradient}`} />
-            </div>
-
             <button onClick={() => setIsModeModalOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors z-20"
+              className="absolute top-6 right-6 p-2 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors z-20"
             >
               <X size={20} />
             </button>
 
-            <div className="p-8 text-center relative z-10">
-              <div className="inline-block p-2 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 mb-6 shadow-xl shadow-indigo-500/30">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-4xl shadow-inner">
-                  👑
-                </div>
+            <div className="p-10">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Pilih Workspace</h2>
+                <p className="text-slate-500 text-base font-medium max-w-xs mx-auto">
+                   Sesuaikan tampilan dengan kebutuhan Anda saat ini.
+                </p>
               </div>
-              
-              <h2 className="text-2xl font-black text-slate-900 mb-2">Pilih Mode Akses</h2>
-              <p className="text-slate-500 text-sm font-medium mb-8 max-w-[280px] mx-auto leading-relaxed">
-                Halo Admin! Silakan pilih workspace yang ingin Anda gunakan saat ini.
-              </p>
 
-              <div className="space-y-4">
-                {/* Mode Admin (ACTIVE) */}
+              <div className="grid grid-cols-1 gap-4">
+
                 <button
                   onClick={() => handleModeSwitch("/admin/dashboard")}
-                  className="w-full group relative p-1 rounded-2xl shadow-md transition-all duration-300 bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-200 text-left"
+                  className="group relative flex items-center gap-6 p-5 rounded-[1.5rem] border-2 border-indigo-600 bg-indigo-50/30 hover:bg-indigo-50 transition-all duration-300 text-left"
                 >
-                  <div className="flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm rounded-xl hover:bg-white/80 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30">
-                        <ShieldCheck size={24} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">Admin Dashboard</h4>
-                        <p className="text-xs text-slate-500 font-medium">Manajemen sistem penuh</p>
-                      </div>
+                  <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xl shadow-indigo-600/20 group-hover:scale-105 transition-transform duration-300">
+                    <ShieldCheck size={32} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-lg font-bold text-slate-900">Admin Panel</h4>
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider">Aktif</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-extrabold text-amber-600 uppercase tracking-widest">Aktif</span>
-                        <span className="relative flex h-3 w-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                        </span>
-                    </div>
+                    <p className="text-sm text-slate-500 font-medium leading-relaxed">Kontrol penuh sistem, manajemen user, dan konten.</p>
+                  </div>
+                  <div className="absolute top-5 right-5 text-indigo-600">
+                    <CheckCircle2 size={24} className="fill-indigo-100" />
                   </div>
                 </button>
 
-                {/* Mode User (INACTIVE) */}
                 <button
                   onClick={() => handleModeSwitch("/dashboard")}
-                  className="w-full group relative p-1 rounded-2xl bg-white shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 border border-slate-100 hover:border-indigo-200 text-left"
+                  className="group relative flex items-center gap-6 p-5 rounded-[1.5rem] border-2 border-slate-100 bg-white hover:border-slate-300 hover:shadow-lg transition-all duration-300 text-left"
                 >
-                  <div className="flex items-center justify-between p-4 rounded-xl">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-500 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                        <LayoutGrid size={24} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">Mode Pengguna</h4>
-                        <p className="text-xs text-slate-400 font-medium">Akses belajar & profil</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={18} className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                  <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-slate-800 group-hover:text-white transition-all duration-300">
+                    <LayoutGrid size={32} />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-slate-800 transition-colors">User Area</h4>
+                    <p className="text-sm text-slate-400 font-medium leading-relaxed group-hover:text-slate-500 transition-colors">Akses halaman belajar dan profil publik.</p>
+                  </div>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-1/2 -translate-y-1/2 right-6 text-slate-300">
+                     <ChevronRight size={24} />
                   </div>
                 </button>
+
               </div>
             </div>
+
+            <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 w-full" />
           </div>
         </div>
       )}
