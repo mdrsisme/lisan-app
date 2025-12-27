@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, Clock, Globe, Award, PlayCircle, 
-  Check, Key, Loader2, Lock, AlertCircle, Unlock
+  Check, Key, Loader2, Lock, AlertCircle, Unlock, Terminal 
 } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
 import Notification from "@/components/ui/Notification";
@@ -27,8 +27,8 @@ interface Course {
   updated_at: string;
 }
 
-export default function CourseEnrollmentPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
+export default function CourseEnrollmentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   
   const [course, setCourse] = useState<Course | null>(null);
@@ -59,14 +59,12 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ slu
         setIsLoading(true);
         setFetchError(false);
     
-        // 1. Ambil data course berdasarkan SLUG dari URL
-        const courseRes = await api.get(`/courses/${slug}`);
+        const courseRes = await api.get(`/courses/${id}`);
         
         if (courseRes.success && courseRes.data) {
             const courseData = courseRes.data;
             setCourse(courseData);
 
-            // 2. Cek status enrollment menggunakan ID asli dari data course yang didapat
             if (localUser && localUser.id && courseData.id) {
                 try {
                     const checkRes = await api.get(`/enrollments/check?user_id=${localUser.id}&course_id=${courseData.id}`);
@@ -90,10 +88,10 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ slu
       }
     };
 
-    if (slug) {
+    if (id) {
         initData();
     }
-  }, [slug]);
+  }, [id]);
 
   const handleEnroll = async () => {
     if (!user) {
@@ -101,7 +99,6 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ slu
         return;
     }
 
-    // Pastikan ID course sudah tersedia dari state course
     if (!course?.id) return;
 
     if (course.access_key && !accessKey) {
@@ -111,7 +108,6 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ slu
 
     setIsSubmitting(true);
     try {
-        // Kirim ID asli ke backend untuk proses enrollment
         const payload = {
             user_id: user.id,
             course_id: course.id,
@@ -261,6 +257,33 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ slu
                         </div>
 
                         <div className="p-8">
+                            {/* --- DEBUG INFO (HANYA MUNCUL JIKA USER = ADMIN) --- */}
+                            {user?.role === 'admin' && (
+                                <div className="mb-6 p-4 bg-slate-900 rounded-xl border border-slate-700 shadow-inner">
+                                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-700">
+                                        <Terminal size={14} className="text-rose-400" />
+                                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
+                                            Admin Debug View
+                                        </span>
+                                    </div>
+                                    <div className="space-y-2 font-mono text-[11px] text-slate-300 break-all">
+                                        <div className="flex flex-col">
+                                            <span className="text-slate-500 font-bold mb-0.5">User ID:</span>
+                                            <span className="bg-slate-800 px-2 py-1 rounded border border-slate-700 select-all cursor-text hover:bg-slate-700 transition-colors">
+                                                {user?.id}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-slate-500 font-bold mb-0.5">Course ID:</span>
+                                            <span className="bg-slate-800 px-2 py-1 rounded border border-slate-700 select-all cursor-text hover:bg-slate-700 transition-colors">
+                                                {course?.id}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {/* --- DEBUG INFO END --- */}
+
                             {isEnrolled ? (
                                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                                     <div className="flex items-start gap-4 bg-emerald-50/80 border border-emerald-100 p-5 rounded-3xl">
@@ -276,7 +299,7 @@ export default function CourseEnrollmentPage({ params }: { params: Promise<{ slu
                                     </div>
 
                                     <Link 
-                                        href={`/learning/${course.slug}`} 
+                                        href={`/learning/${course.id}`} 
                                         className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95"
                                     >
                                         <PlayCircle size={22} className="group-hover:scale-110 transition-transform"/>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { 
-  Search, Loader2, BookOpen, LayoutGrid, Users, User, Trash2, Award, PlusCircle
+  Search, Loader2, BookOpen, User, Trash2, Award, PlusCircle, AlertTriangle, X
 } from "lucide-react";
 import { api } from "@/lib/api";
 import Notification from "@/components/ui/Notification";
@@ -53,6 +53,10 @@ export default function AdminUserMyCoursesPage({ params }: { params: Promise<{ i
     type: null, message: ""
   });
 
+  // State untuk Modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<{id: string, title: string} | null>(null);
+
   useEffect(() => {
     fetchData();
   }, [id]);
@@ -77,16 +81,30 @@ export default function AdminUserMyCoursesPage({ params }: { params: Promise<{ i
     }
   };
 
-  const handleDeleteEnrollment = async (enrollmentId: string) => {
-    if (!confirm("Hapus akses user ke kursus ini? Progress akan hilang.")) return;
+  // 1. Fungsi untuk MEMBUKA Modal
+  const openDeleteModal = (enrollmentId: string, courseTitle: string) => {
+    setSelectedEnrollment({ id: enrollmentId, title: courseTitle });
+    setIsDeleteModalOpen(true);
+  };
 
-    setProcessingId(enrollmentId);
+  // 2. Fungsi untuk MENUTUP Modal
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setSelectedEnrollment(null);
+  };
+
+  // 3. Fungsi EKSEKUSI Hapus (Dipanggil dari Modal)
+  const handleConfirmDelete = async () => {
+    if (!selectedEnrollment) return;
+
+    setProcessingId(selectedEnrollment.id);
     try {
-      const res = await api.delete(`/enrollments/${enrollmentId}`);
+      const res = await api.delete(`/enrollments/${selectedEnrollment.id}`);
 
       if (res.success) {
-        setNotification({ type: 'success', message: "Akses dicabut." });
-        setEnrollments(prev => prev.filter(e => e.id !== enrollmentId));
+        setNotification({ type: 'success', message: "Akses dicabut & progress dihapus." });
+        setEnrollments(prev => prev.filter(e => e.id !== selectedEnrollment.id));
+        closeDeleteModal(); // Tutup modal jika sukses
       } else {
         throw new Error(res.message);
       }
@@ -109,7 +127,7 @@ export default function AdminUserMyCoursesPage({ params }: { params: Promise<{ i
 
   return (
     <AdminLayout>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
         
         <Notification 
             type={notification.type} 
@@ -142,7 +160,6 @@ export default function AdminUserMyCoursesPage({ params }: { params: Promise<{ i
                 />
             </div>
 
-            {/* Link ke halaman Enrollments (Katalog) */}
             <Link 
                 href={`/admin/users/${id}/enrollments`}
                 className="flex items-center gap-2 px-6 py-3 bg-cyan-600 text-white rounded-xl font-bold hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-500/20"
@@ -158,64 +175,62 @@ export default function AdminUserMyCoursesPage({ params }: { params: Promise<{ i
              </div>
         ) : filteredEnrollments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEnrollments.map((enrollment) => {
-                    const isProcessing = processingId === enrollment.id;
-                    return (
-                        <div key={enrollment.id} className="group relative bg-white rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
-                            <div className="h-40 w-full relative bg-slate-900 overflow-hidden">
-                                {enrollment.courses?.thumbnail_url ? (
-                                    <Image 
-                                        src={enrollment.courses.thumbnail_url} 
-                                        alt={enrollment.courses.title} 
-                                        fill 
-                                        className="object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
+                {filteredEnrollments.map((enrollment) => (
+                    <div key={enrollment.id} className="group relative bg-white rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
+                        <div className="h-40 w-full relative bg-slate-900 overflow-hidden">
+                            {enrollment.courses?.thumbnail_url ? (
+                                <Image 
+                                    src={enrollment.courses.thumbnail_url} 
+                                    alt={enrollment.courses.title} 
+                                    fill 
+                                    className="object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
+                                />
+                            ) : (
+                                <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
+                            )}
+                            <div className="absolute top-4 left-4 flex gap-2">
+                                <span className="bg-black/40 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-white/10">
+                                    {enrollment.courses?.level}
+                                </span>
+                                {enrollment.status === 'completed' && (
+                                    <span className="bg-emerald-500 text-white p-1 rounded-lg shadow-lg"><Award size={14} /></span>
                                 )}
-                                <div className="absolute top-4 left-4 flex gap-2">
-                                    <span className="bg-black/40 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-white/10">
-                                        {enrollment.courses?.level}
-                                    </span>
-                                    {enrollment.status === 'completed' && (
-                                        <span className="bg-emerald-500 text-white p-1 rounded-lg shadow-lg"><Award size={14} /></span>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="p-6 flex-1 flex flex-col">
-                                <h3 className="text-lg font-bold text-slate-800 mb-4 line-clamp-2 leading-snug">
-                                    {enrollment.courses?.title}
-                                </h3>
-                                <div className="mb-6">
-                                    <div className="flex justify-between items-end mb-2">
-                                        <span className="text-xs font-bold text-slate-400 uppercase">Progress</span>
-                                        <span className="text-sm font-bold text-slate-800">{enrollment.progress_percentage}%</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div 
-                                            className={`h-full rounded-full ${getProgressColor(enrollment.progress_percentage)}`}
-                                            style={{ width: `${enrollment.progress_percentage}%` }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between gap-3">
-                                    <div className="text-xs text-slate-400 font-medium">
-                                        Join: {new Date(enrollment.created_at).toLocaleDateString('id-ID')}
-                                    </div>
-                                    <button 
-                                        onClick={() => handleDeleteEnrollment(enrollment.id)}
-                                        disabled={isProcessing}
-                                        className="p-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition-colors disabled:opacity-50"
-                                        title="Hapus Akses"
-                                    >
-                                        {isProcessing ? <Loader2 size={18} className="animate-spin"/> : <Trash2 size={18} />}
-                                    </button>
-                                </div>
                             </div>
                         </div>
-                    );
-                })}
+
+                        <div className="p-6 flex-1 flex flex-col">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 line-clamp-2 leading-snug">
+                                {enrollment.courses?.title}
+                            </h3>
+                            <div className="mb-6">
+                                <div className="flex justify-between items-end mb-2">
+                                    <span className="text-xs font-bold text-slate-400 uppercase">Progress</span>
+                                    <span className="text-sm font-bold text-slate-800">{enrollment.progress_percentage}%</span>
+                                </div>
+                                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div 
+                                        className={`h-full rounded-full ${getProgressColor(enrollment.progress_percentage)}`}
+                                        style={{ width: `${enrollment.progress_percentage}%` }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between gap-3">
+                                <div className="text-xs text-slate-400 font-medium">
+                                    Join: {new Date(enrollment.created_at).toLocaleDateString('id-ID')}
+                                </div>
+                                
+                                {/* Tombol Hapus memicu Modal */}
+                                <button 
+                                    onClick={() => openDeleteModal(enrollment.id, enrollment.courses.title)}
+                                    className="p-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition-colors"
+                                    title="Hapus Akses"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         ) : (
             <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[3rem] border border-slate-200 border-dashed text-center">
@@ -232,6 +247,66 @@ export default function AdminUserMyCoursesPage({ params }: { params: Promise<{ i
                 </Link>
             </div>
         )}
+
+        {/* --- MODAL KONFIRMASI DELETE --- */}
+        {isDeleteModalOpen && selectedEnrollment && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-6 relative animate-in zoom-in-95 duration-200 border border-slate-100">
+                    
+                    {/* Tombol Close Pojok Kanan */}
+                    <button 
+                        onClick={closeDeleteModal}
+                        disabled={!!processingId}
+                        className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
+
+                    <div className="flex flex-col items-center text-center">
+                        <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-4">
+                            <AlertTriangle size={32} />
+                        </div>
+                        
+                        <h3 className="text-xl font-black text-slate-800 mb-2">
+                            Cabut Akses Kursus?
+                        </h3>
+                        
+                        <div className="text-sm text-slate-500 px-4 mb-6 leading-relaxed">
+                            Anda akan menghapus akses user <strong>{user?.username}</strong> ke kursus:
+                            <br />
+                            <span className="font-bold text-slate-700 block mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                {selectedEnrollment.title}
+                            </span>
+                            <p className="mt-3 text-rose-500 font-medium text-xs bg-rose-50 py-1 px-2 rounded inline-block">
+                                ⚠️ Peringatan: Seluruh progress belajar akan hilang permanen.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3 w-full">
+                            <button
+                                onClick={closeDeleteModal}
+                                disabled={!!processingId}
+                                className="flex-1 py-3 px-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleConfirmDelete}
+                                disabled={!!processingId}
+                                className="flex-1 py-3 px-4 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                {processingId ? (
+                                    <><Loader2 size={18} className="animate-spin" /> Menghapus...</>
+                                ) : (
+                                    <>Ya, Hapus Akses</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
       </div>
     </AdminLayout>
   );

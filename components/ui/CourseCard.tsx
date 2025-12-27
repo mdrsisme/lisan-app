@@ -33,7 +33,8 @@ export default function CourseCard({ course, index }: CourseCardProps) {
 
   return (
     <Link
-      href={`/courses/${course.slug}`}
+      // UBAH BAGIAN INI: Gunakan course.id, bukan course.slug
+      href={`/courses/${course.id}`}
       className="group flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 h-full overflow-hidden"
     >
       <div className="relative w-full aspect-[16/9] bg-slate-900 overflow-hidden">
