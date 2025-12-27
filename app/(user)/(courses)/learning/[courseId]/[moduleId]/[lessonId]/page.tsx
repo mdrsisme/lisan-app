@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { 
-  ArrowLeft, FileText, PlayCircle, Camera, 
-  Clock, CheckCircle, Lock, Loader2, AlertCircle, Zap
+  ArrowLeft, ChevronRight, ChevronLeft, CheckCircle, 
+  PlayCircle, Camera, FileText, Loader2, Zap, AlertCircle 
 } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
 import { api } from "@/lib/api";
+import Notification from "@/components/ui/Notification";
 
 // --- Tipe Data ---
 type LessonType = 'video' | 'text' | 'camera_practice';
@@ -17,203 +18,284 @@ type LessonType = 'video' | 'text' | 'camera_practice';
 interface Lesson {
   id: string;
   title: string;
-  slug: string;
   type: LessonType;
   description: string | null;
+  content_url: string | null;
+  target_gesture: string | null;
   xp_reward: number;
   order_index: number;
-  is_published: boolean;
 }
 
-interface ModuleDetail {
-  id: string;
-  title: string;
-  description: string | null;
-  order_index: number;
-}
-
-export default function ModuleLessonsPage({ 
+export default function LessonPlayerPage({ 
   params 
 }: { 
-  params: Promise<{ courseId: string; moduleId: string }> 
+  params: Promise<{ courseId: string; moduleId: string; lessonId: string }> 
 }) {
-  const { courseId, moduleId } = use(params);
+  const { courseId, moduleId, lessonId } = use(params);
   const router = useRouter();
 
+  // State Data
   const [isLoading, setIsLoading] = useState(true);
-  const [module, setModule] = useState<ModuleDetail | null>(null);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [allLessons, setAllLessons] = useState<Lesson[]>([]); // Untuk navigasi Next/Prev
+  
+  // State Aksi
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [notification, setNotification] = useState<{type: 'success'|'error'|null, message: string}>({
+    type: null, message: ""
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const initData = async () => {
       try {
         setIsLoading(true);
-        setError(null);
 
-        // 1. Ambil Detail Modul (untuk Judul & Deskripsi Header)
-        const moduleRes = await api.get(`/modules/${moduleId}`);
-        if (!moduleRes.success) throw new Error("Gagal memuat informasi modul");
-        setModule(moduleRes.data);
+        // 1. Ambil Detail Lesson Saat Ini
+        const lessonRes = await api.get(`/lessons/${lessonId}`);
+        if (!lessonRes.success) throw new Error("Gagal memuat materi.");
+        setLesson(lessonRes.data);
 
-        // 2. Ambil Daftar Lesson yang Published
-        const lessonsRes = await api.get(`/lessons/published?module_id=${moduleId}&limit=100`);
-        if (!lessonsRes.success) throw new Error("Gagal memuat daftar pelajaran");
-        setLessons(lessonsRes.data.lessons);
+        // 2. Ambil Semua Lesson di Modul ini (Untuk menentukan Next/Prev)
+        const listRes = await api.get(`/lessons/published?module_id=${moduleId}&limit=100`);
+        if (listRes.success) {
+            setAllLessons(listRes.data.lessons);
+        }
 
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "Terjadi kesalahan.");
+        // 3. (Opsional) Cek apakah user sudah pernah menyelesaikan lesson ini
+        // Bisa panggil endpoint /progress/detail jika perlu status awal
+        
+      } catch (error: any) {
+        setNotification({ type: 'error', message: error.message || "Terjadi kesalahan." });
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (moduleId) {
-      fetchData();
+    if (lessonId) {
+        initData();
     }
-  }, [moduleId]);
+  }, [lessonId, moduleId]);
 
-  // Helper untuk Icon berdasarkan Tipe Lesson
-  const getLessonIcon = (type: LessonType) => {
-    switch (type) {
-      case 'video':
-        return <PlayCircle size={20} className="text-blue-600" />;
-      case 'camera_practice':
-        return <Camera size={20} className="text-rose-600" />;
-      case 'text':
-      default:
-        return <FileText size={20} className="text-slate-600" />;
+  // --- Logic Navigasi Next/Prev ---
+  const currentIndex = allLessons.findIndex(l => l.id === lessonId);
+  const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
+  const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
+
+  // --- Logic Selesaikan Pelajaran ---
+  const handleComplete = async () => {
+    setIsCompleting(true);
+    try {
+        const userStr = localStorage.getItem("user");
+        if (!userStr) {
+            router.push('/login');
+            return;
+        }
+        const user = JSON.parse(userStr);
+
+        // Panggil API Backend (Trigger otomatis hitung % course)
+        const payload = {
+            user_id: user.id,
+            course_id: courseId, // Penting untuk trigger DB
+            module_id: moduleId,
+            lesson_id: lessonId,
+            is_completed: true,
+            last_position_seconds: 0 // Bisa diupdate jika video player support tracking
+        };
+
+        const res = await api.post('/progress', payload);
+
+        if (res.success) {
+            setIsCompleted(true);
+            setNotification({ type: 'success', message: `Selamat! +${lesson?.xp_reward} XP` });
+            
+            // Auto redirect ke next lesson setelah 1.5 detik
+            if (nextLesson) {
+                setTimeout(() => {
+                    router.push(`/learning/${courseId}/${moduleId}/${nextLesson.id}`);
+                }, 1500);
+            } else {
+                // Jika materi habis di modul ini
+                setTimeout(() => {
+                    router.push(`/learning/${courseId}/${moduleId}`);
+                }, 1500);
+            }
+        } else {
+            throw new Error(res.message);
+        }
+    } catch (error: any) {
+        setNotification({ type: 'error', message: "Gagal menyimpan progress." });
+    } finally {
+        setIsCompleting(false);
     }
   };
 
-  // Helper untuk Label Tipe
-  const getLessonTypeLabel = (type: LessonType) => {
-    switch (type) {
-      case 'video': return "Video Materi";
-      case 'camera_practice': return "Praktek AI";
-      case 'text': return "Bacaan";
-      default: return "Materi";
+  // --- Render Konten Berdasarkan Tipe ---
+  const renderContent = () => {
+    if (!lesson) return null;
+
+    switch (lesson.type) {
+        case 'video':
+            return (
+                <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative group">
+                    {lesson.content_url ? (
+                        <video 
+                            src={lesson.content_url} 
+                            controls 
+                            className="w-full h-full object-contain"
+                            poster="/video-poster-placeholder.png" // Opsional
+                        >
+                            Browser Anda tidak mendukung tag video.
+                        </video>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                            <AlertCircle size={48} className="mb-2 opacity-50"/>
+                            <p>Video tidak tersedia</p>
+                        </div>
+                    )}
+                </div>
+            );
+        
+        case 'camera_practice':
+            return (
+                <div className="w-full bg-slate-900 rounded-2xl overflow-hidden shadow-2xl p-1 text-center relative">
+                    <div className="aspect-video bg-slate-800 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-slate-700">
+                        <Camera size={64} className="text-slate-600 mb-4" />
+                        <h3 className="text-xl font-bold text-white mb-2">Area Praktek Gesture AI</h3>
+                        <p className="text-slate-400 max-w-md mx-auto mb-6">
+                            Sistem akan mendeteksi gerakan tangan Anda melalui kamera.
+                        </p>
+                        <div className="bg-indigo-600 text-white px-6 py-3 rounded-full font-bold animate-pulse">
+                            Target Gesture: "{lesson.target_gesture}"
+                        </div>
+                        <p className="text-xs text-slate-500 mt-4">*Fitur kamera akan diaktifkan pada implementasi ML.</p>
+                    </div>
+                </div>
+            );
+
+        case 'text':
+        default:
+            return (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm prose prose-slate max-w-none">
+                    {/* Render HTML content jika ada, atau fallback description */}
+                    <div dangerouslySetInnerHTML={{ __html: lesson.description || "<p>Tidak ada konten teks.</p>" }} />
+                </div>
+            );
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-600" size={40} />
-      </div>
-    );
+      return (
+        <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+            <Loader2 className="animate-spin text-indigo-600" size={40} />
+        </div>
+      );
   }
 
-  if (error || !module) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4 text-center">
-        <AlertCircle className="text-rose-500 mb-4" size={48} />
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">Modul Tidak Ditemukan</h1>
-        <p className="text-slate-500 mb-6">{error}</p>
-        <Link 
-          href={`/learning/${courseId}`} 
-          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Kembali ke Daftar Modul
-        </Link>
-      </div>
-    );
-  }
+  if (!lesson) return null;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans pb-20">
       <UserNavbar />
+      
+      <Notification 
+        type={notification.type} 
+        message={notification.message} 
+        onClose={() => setNotification({ type: null, message: "" })} 
+      />
 
-      {/* --- HEADER --- */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-          <Link 
-            href={`/learning/${courseId}`} 
-            className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors mb-4"
-          >
-            <ArrowLeft size={16} /> Kembali ke Modul
-          </Link>
-          
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-2">
-              {module.title}
-            </h1>
-            <p className="text-slate-500 leading-relaxed max-w-2xl">
-              {module.description || "Selesaikan semua pelajaran di bawah ini untuk melanjutkan."}
-            </p>
+      {/* --- Top Navigation Bar --- */}
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+              <Link 
+                  href={`/learning/${courseId}/${moduleId}`}
+                  className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors"
+              >
+                  <ArrowLeft size={18} /> <span className="hidden sm:inline">Daftar Materi</span>
+              </Link>
+
+              <div className="flex items-center gap-2">
+                  <div className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs font-bold border border-amber-100 flex items-center gap-1">
+                      <Zap size={12} fill="currentColor" /> {lesson.xp_reward} XP
+                  </div>
+              </div>
           </div>
-        </div>
       </div>
 
-      {/* --- LESSON LIST --- */}
+      {/* --- Main Content --- */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-slate-800">Daftar Pelajaran</h2>
-          <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">
-            {lessons.length} Materi
-          </span>
-        </div>
+          
+          {/* Title Header */}
+          <div className="mb-8">
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-4 leading-tight">
+                  {lesson.title}
+              </h1>
+              {lesson.type !== 'text' && (
+                  <p className="text-slate-500 text-lg leading-relaxed">
+                      {lesson.description}
+                  </p>
+              )}
+          </div>
 
-        {lessons.length > 0 ? (
-          <div className="space-y-4">
-            {lessons.map((lesson, index) => (
-              <Link 
-                key={lesson.id}
-                href={`/learning/${courseId}/${moduleId}/${lesson.id}`}
-                className="group flex flex-col md:flex-row items-start md:items-center gap-4 p-5 bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300 transform active:scale-[0.99]"
+          {/* Dynamic Content Area (Video/Camera/Text) */}
+          <div className="mb-10">
+              {renderContent()}
+          </div>
+
+          {/* --- Action & Navigation Footer --- */}
+          <div className="border-t border-slate-200 pt-8 flex flex-col-reverse md:flex-row items-center justify-between gap-6">
+              
+              {/* Previous Button */}
+              <div className="w-full md:w-auto">
+                  {prevLesson ? (
+                      <Link 
+                          href={`/learning/${courseId}/${moduleId}/${prevLesson.id}`}
+                          className="flex items-center justify-center gap-2 text-slate-500 font-bold hover:text-indigo-600 transition-colors px-4 py-3 rounded-xl hover:bg-slate-50 w-full md:w-auto"
+                      >
+                          <ChevronLeft size={20} /> Sebelumnya
+                      </Link>
+                  ) : (
+                      <div className="w-24 hidden md:block" /> // Spacer
+                  )}
+              </div>
+
+              {/* Complete Button */}
+              <button
+                  onClick={handleComplete}
+                  disabled={isCompleting || isCompleted}
+                  className={`
+                      relative group w-full md:w-auto px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-xl
+                      ${isCompleted 
+                          ? "bg-emerald-500 text-white shadow-emerald-500/30 cursor-default" 
+                          : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/30"
+                      }
+                  `}
               >
-                {/* Number / Status Icon */}
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-bold group-hover:bg-indigo-50 group-hover:text-indigo-600 group-hover:border-indigo-100 transition-colors">
-                  {index + 1}
-                </div>
+                  {isCompleting ? (
+                      <><Loader2 className="animate-spin" /> Menyimpan...</>
+                  ) : isCompleted ? (
+                      <><CheckCircle className="animate-bounce" /> Selesai!</>
+                  ) : (
+                      <>
+                          Selesai & Lanjut
+                          <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+                      </>
+                  )}
+              </button>
 
-                {/* Content Info */}
-                <div className="flex-1">
-                   <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${
-                        lesson.type === 'video' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                        lesson.type === 'camera_practice' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                        'bg-slate-50 text-slate-600 border-slate-100'
-                      }`}>
-                        {getLessonTypeLabel(lesson.type)}
-                      </span>
-                   </div>
-                   <h3 className="text-base md:text-lg font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">
-                     {lesson.title}
-                   </h3>
-                   {lesson.description && (
-                     <p className="text-sm text-slate-500 line-clamp-1 mt-1">
-                       {lesson.description}
-                     </p>
+              {/* Next Button (Ghost, only if already completed or skipping) */}
+              <div className="w-full md:w-auto text-right">
+                   {nextLesson && (
+                      <Link 
+                          href={`/learning/${courseId}/${moduleId}/${nextLesson.id}`}
+                          className="hidden md:flex items-center justify-center gap-2 text-slate-400 font-bold hover:text-indigo-600 transition-colors px-4 py-3 text-sm"
+                      >
+                          Lewati <ChevronRight size={16} />
+                      </Link>
                    )}
-                </div>
+              </div>
 
-                {/* Meta Info (Right Side) */}
-                <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-50">
-                   {/* XP Reward Badge */}
-                   <div className="flex items-center gap-1.5 text-xs font-bold text-amber-500 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100">
-                      <Zap size={14} fill="currentColor" />
-                      {lesson.xp_reward} XP
-                   </div>
-
-                   {/* Icon Indicator */}
-                   <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                      {getLessonIcon(lesson.type)}
-                   </div>
-                </div>
-              </Link>
-            ))}
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 bg-white rounded-[2rem] border border-dashed border-slate-300 text-center">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-300">
-              <FileText size={28} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800">Materi Kosong</h3>
-            <p className="text-slate-500 max-w-xs">Belum ada pelajaran yang ditambahkan ke modul ini.</p>
-          </div>
-        )}
       </div>
     </div>
   );
