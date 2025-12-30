@@ -1,42 +1,50 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, Rocket } from "lucide-react";
-import { themeColors } from "@/lib/color";
+import { ArrowRight, Rocket } from "lucide-react";
 
 export default function CTA() {
-  const theme = themeColors.cosmic;
-
   return (
-    <section className="hidden md:block relative py-32 bg-white overflow-hidden text-center selection:bg-fuchsia-500 selection:text-white">
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-fuchsia-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03]" />
+    <section className="hidden md:block relative py-20 bg-[#F8FAFC] overflow-hidden text-center selection:bg-indigo-500 selection:text-white">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-indigo-100/50 rounded-full blur-[100px] opacity-60" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
+      </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-100 mb-8 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <Rocket size={16} className="text-fuchsia-500" />
-          <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">
-            Bergabunglah dengan Revolusi Inklusi
-          </span>
-        </div>
-        <h2 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 leading-tight tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-          Siap Menghapus <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-pink-600">
-            Batasan Komunikasi?
-          </span>
-        </h2>
-        <p className="text-slate-500 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed font-medium animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-          Jadilah bagian dari ekosistem yang menghubungkan jutaan orang tanpa halangan. Mulai gunakan LISAN sekarang secara gratis.
-        </p>
+      <div className="relative z-10 max-w-4xl mx-auto px-6">
+        <div className="relative p-10 md:p-14 rounded-[2.5rem] bg-[#0F172A] overflow-hidden shadow-2xl shadow-indigo-900/20 group hover:-translate-y-1 transition-transform duration-500">
+          <div className="absolute top-[-50%] left-[-20%] w-[400px] h-[400px] bg-indigo-500/30 rounded-full blur-[80px] pointer-events-none mix-blend-screen" />
+          <div className="absolute bottom-[-50%] right-[-20%] w-[400px] h-[400px] bg-fuchsia-500/30 rounded-full blur-[80px] pointer-events-none mix-blend-screen" />
+          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.05] mix-blend-overlay" />
+          
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 mb-6 backdrop-blur-sm">
+              <Rocket size={14} className="text-indigo-400" />
+              <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                Revolusi Inklusi
+              </span>
+            </div>
 
-        <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-          <Link
-            href="/register"
-            className="group relative h-16 px-10 rounded-full text-white shadow-xl hover:shadow-2xl hover:shadow-indigo-500/30 hover:-translate-y-1 transition-all duration-300 flex items-center gap-3 overflow-hidden bg-slate-900"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <span className="relative z-10 text-lg font-bold tracking-wide">Mulai Sekarang Gratis</span>
-            <ArrowRight size={20} className="relative z-10 group-hover:translate-x-1 transition-transform" />
-          </Link>
+            <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight tracking-tight">
+              Hapus Batasan <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-fuchsia-400 to-rose-400">
+                Komunikasi Sekarang
+              </span>
+            </h2>
+
+            <p className="text-slate-400 text-base md:text-lg mb-8 max-w-xl mx-auto leading-relaxed font-medium">
+              Bergabung dengan ekosistem yang menghubungkan jutaan orang. Mulai gunakan LISAN secara gratis.
+            </p>
+
+            <Link
+              href="/register"
+              className="group/btn relative h-12 px-8 rounded-full text-slate-900 shadow-lg hover:shadow-indigo-500/20 transition-all duration-300 flex items-center gap-2 overflow-hidden bg-white hover:bg-slate-50"
+            >
+              <span className="relative z-10 text-sm font-bold tracking-wide group-hover/btn:text-indigo-950 transition-colors">
+                Mulai Gratis
+              </span>
+              <ArrowRight size={16} className="relative z-10 group-hover/btn:translate-x-1 group-hover/btn:text-indigo-950 transition-all" />
+            </Link>
+
+          </div>
         </div>
       </div>
     </section>

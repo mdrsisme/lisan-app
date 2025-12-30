@@ -5,116 +5,162 @@ import { useRouter } from "next/navigation";
 import { 
   ShieldCheck, 
   LayoutDashboard, 
-  ChevronRight,
   LogOut,
-  Sparkles
+  Sparkles,
+  ArrowRight,
+  AlertCircle
 } from "lucide-react";
+import MobileRestriction from "@/components/ui/MobileRestriction";
+import TokenRestriction from "@/components/ui/TokenRestriction";
 
 export default function SelectRoleScreen() {
   const router = useRouter();
   const [userData, setUserData] = useState<any>(null);
+  const [hasToken, setHasToken] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
     const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      router.push("/login");
-      return;
+
+    if (token) setHasToken(true);
+    
+    if (!userStr) { 
+        if (!token) return; 
+        router.push("/login"); 
+        return; 
     }
+    
     const user = JSON.parse(userStr);
-    if (user.role !== "admin") {
-      router.push("/dashboard");
-      return;
-    }
+    if (user.role !== "admin") { router.push("/dashboard"); return; }
+    
     setUserData(user);
   }, [router]);
 
-  const handleLogout = () => {
+  const confirmLogout = () => {
     localStorage.clear();
     router.push("/login");
   };
 
-  if (!userData) return null;
+  if (!userData && hasToken) return null;
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6 font-sans relative overflow-hidden bg-slate-50 selection:bg-fuchsia-200 selection:text-fuchsia-900">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 font-sans relative overflow-hidden bg-[#fafafa] selection:bg-rose-100 selection:text-rose-900">
+      
+      <MobileRestriction />
+      <TokenRestriction />
+
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white p-6 rounded-[1.5rem] max-w-[300px] w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex flex-col items-center text-center">
+                    <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+                        <AlertCircle size={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">Konfirmasi Keluar</h3>
+                    <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                        Apakah Anda yakin ingin mengakhiri sesi dan keluar?
+                    </p>
+                    <div className="flex gap-3 w-full">
+                        <button 
+                            onClick={() => setShowLogoutModal(false)}
+                            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                        >
+                            Batal
+                        </button>
+                        <button 
+                            onClick={confirmLogout}
+                            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors"
+                        >
+                            Ya, Keluar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[600px] h-[600px] bg-cyan-400/30 rounded-full blur-[120px] mix-blend-multiply animate-pulse-slow" />
-        <div className="absolute top-[0%] -right-[10%] w-[500px] h-[500px] bg-fuchsia-400/30 rounded-full blur-[120px] mix-blend-multiply animate-blob" />
-        <div className="absolute -bottom-[10%] -left-[5%] w-[600px] h-[600px] bg-amber-300/30 rounded-full blur-[100px] mix-blend-multiply animate-blob animation-delay-2000" />
-        <div className="absolute bottom-[0%] right-[0%] w-[500px] h-[500px] bg-violet-400/30 rounded-full blur-[120px] mix-blend-multiply animate-pulse-slow" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/40 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.04] mix-blend-overlay" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-rose-200 via-red-200 to-orange-100 rounded-full blur-[100px] opacity-60 animate-pulse-slow" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
       </div>
 
-      <div className="max-w-md w-full animate-in fade-in zoom-in-95 duration-700 relative z-10">
-        <div className="text-center mb-10">
-          <div className="inline-flex p-3 rounded-2xl bg-white/60 backdrop-blur-md shadow-lg shadow-purple-500/10 mb-6 border border-white/50 animate-bounce-slow">
-            <Sparkles size={32} className="text-fuchsia-600 fill-fuchsia-200" />
+      <div className="w-full max-w-sm bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(244,63,94,0.15)] border border-white/50 p-6 relative z-10 animate-in zoom-in-95 duration-500 ring-1 ring-slate-900/5">
+        
+        {hasToken && (
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white border border-emerald-100 shadow-sm px-3 py-1 rounded-full flex items-center gap-1.5 animate-fade-in-down z-20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Sesi Aktif</span>
+            </div>
+        )}
+
+        <div className="text-center mb-8 mt-2">
+          <div className="w-14 h-14 mx-auto bg-gradient-to-br from-rose-100 to-orange-100 rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-white">
+            <Sparkles size={24} className="text-rose-500 fill-rose-500/20" />
           </div>
-          
-          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-fuchsia-600 to-amber-500 mb-4 tracking-tight drop-shadow-sm">
-            Halo, Admin!
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+            Halo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">{userData?.full_name?.split(' ')[0]}</span>
           </h1>
-          
-          <p className="text-slate-600 text-lg font-medium leading-relaxed">
-            Selamat datang <span className="text-fuchsia-700 font-bold">{userData.full_name?.split(' ')[0]}</span>.<br/>
-            Pilih workspace kamu hari ini.
+          <p className="text-slate-500 text-sm font-medium mt-1">
+            Pilih workspace akses kamu.
           </p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-3">
+          
           <button
-            onClick={() => router.push("/dashboard")}
-            className="w-full group relative p-1 rounded-[2.5rem] bg-white/40 backdrop-blur-xl shadow-lg shadow-indigo-500/5 hover:shadow-cyan-500/40 transition-all duration-500 overflow-hidden text-left border border-white/60 hover:border-cyan-300 hover:-translate-y-1"
+            onClick={() => router.push("/admin/dashboard")}
+            className="group w-full relative overflow-hidden rounded-2xl bg-slate-900 p-4 text-left transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-red-500/20 active:scale-[0.98]"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-50 to-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-rose-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             
-            <div className="relative p-5 flex items-center justify-between z-10">
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 rounded-[1.2rem] bg-gradient-to-br from-cyan-100 to-blue-100 text-cyan-600 group-hover:from-cyan-500 group-hover:to-blue-600 group-hover:text-white flex items-center justify-center transition-all duration-500 shadow-inner group-hover:shadow-lg group-hover:shadow-cyan-400/50 group-hover:scale-110">
-                  <LayoutDashboard size={28} strokeWidth={2} />
+            <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-white/10 text-white group-hover:bg-white/20 transition-colors">
+                        <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-white">Admin Dashboard</h3>
+                        <p className="text-[11px] text-slate-400 group-hover:text-red-100">Kontrol sistem penuh</p>
+                    </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-xl text-slate-800 mb-1 group-hover:text-cyan-700 transition-colors">Mode Pengguna</h3>
-                  <p className="text-sm font-medium text-slate-500 group-hover:text-cyan-600/70 transition-colors">Akses fitur reguler</p>
+                <div className="text-slate-500 group-hover:text-white transition-colors">
+                    <ArrowRight size={18} />
                 </div>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-slate-400 group-hover:bg-cyan-100 group-hover:text-cyan-600 transition-all duration-500 transform group-hover:translate-x-1 group-hover:scale-110">
-                <ChevronRight size={20} strokeWidth={2.5} />
-              </div>
             </div>
           </button>
 
           <button
-            onClick={() => router.push("/admin/dashboard")}
-            className="w-full group relative p-1 rounded-[2.5rem] bg-white/40 backdrop-blur-xl shadow-lg shadow-orange-500/5 hover:shadow-rose-500/40 transition-all duration-500 overflow-hidden text-left border border-white/60 hover:border-rose-300 hover:-translate-y-1"
+            onClick={() => router.push("/dashboard")}
+            className="group w-full relative overflow-hidden rounded-2xl bg-white border border-slate-100 p-4 text-left transition-all hover:border-slate-300 hover:bg-slate-50 hover:shadow-md active:scale-[0.98]"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-rose-50 to-orange-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <div className="relative p-5 flex items-center justify-between z-10">
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 rounded-[1.2rem] bg-gradient-to-br from-rose-100 to-orange-100 text-rose-600 group-hover:from-rose-500 group-hover:to-orange-500 group-hover:text-white flex items-center justify-center transition-all duration-500 shadow-inner group-hover:shadow-lg group-hover:shadow-rose-500/50 group-hover:scale-110">
-                  <ShieldCheck size={28} strokeWidth={2} />
+            <div className="relative flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-slate-100 text-slate-600 group-hover:bg-white group-hover:shadow-sm transition-all">
+                        <LayoutDashboard size={20} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-800">Mode Pengguna</h3>
+                        <p className="text-[11px] text-slate-500">Fitur reguler app</p>
+                    </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-xl text-slate-800 mb-1 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-rose-600 group-hover:to-orange-600 transition-colors">Admin Dashboard</h3>
-                  <p className="text-sm font-medium text-slate-500 group-hover:text-rose-600/70 transition-colors">Kontrol sistem penuh</p>
+                <div className="text-slate-300 group-hover:text-slate-600 transition-colors">
+                    <ArrowRight size={18} />
                 </div>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-slate-400 group-hover:bg-rose-100 group-hover:text-rose-600 transition-all duration-500 transform group-hover:translate-x-1 group-hover:scale-110">
-                <ChevronRight size={20} strokeWidth={2.5} />
-              </div>
             </div>
           </button>
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-6 pt-4 border-t border-slate-100 text-center">
           <button 
-            onClick={handleLogout}
-            className="group inline-flex items-center gap-2 text-slate-500 text-sm font-bold hover:text-red-600 transition-all duration-300 px-6 py-3 rounded-full hover:bg-white/50 hover:shadow-md hover:scale-105 border border-transparent hover:border-red-100"
+            onClick={() => setShowLogoutModal(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-red-500 transition-colors py-2 px-4 rounded-full hover:bg-red-50"
           >
-            <LogOut size={18} className="group-hover:-translate-x-1 transition-transform duration-300" strokeWidth={2} />
-            Batal & Keluar
+            <LogOut size={14} />
+            Keluar Akun
           </button>
         </div>
 

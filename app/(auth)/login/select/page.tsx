@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import SelectRoleScreen from "./SelectRoleScreen";
 
 export const metadata: Metadata = {
-  title: "Pilih Akses",
+  title: "Pilih Akses Akun",
   description: "Pilih dashboard untuk melanjutkan aktivitas Anda.",
 };
 
