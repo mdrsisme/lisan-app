@@ -29,10 +29,8 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <section className="relative w-full overflow-hidden rounded-[2.5rem] border border-white/[0.08] bg-[#09090b] px-8 md:px-12 py-10 shadow-2xl transition-all duration-700 mb-8">
-      {/* Background Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_85%)]" />
 
-      {/* Dynamic Glow Effects based on theme.gradient */}
       <div className={`absolute -bottom-32 -right-10 w-[500px] h-[300px] blur-[120px] rounded-full opacity-25 transition-all duration-1000 animate-pulse ${theme.gradient}`} />
       <div className={`absolute -top-10 -left-10 w-[200px] h-[200px] blur-[80px] rounded-full opacity-[0.08] ${theme.gradient}`} />
 

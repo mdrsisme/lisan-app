@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { themeColors } from "@/lib/color";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type StatItem = {
   key: string;
@@ -242,7 +243,9 @@ export default function DashboardScreen() {
 
   return (
     <div className="relative min-h-full pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
+      {loading && <LoadingSpinner />}
+
       <div className="space-y-12">
         <PageHeader
             theme={themeColors.cosmic}

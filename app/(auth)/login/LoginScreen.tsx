@@ -34,26 +34,24 @@ export default function LoginScreen() {
       
       if (response.success && response.data) {
         const { token, user } = response.data;
-
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
-
         if (user.role === "admin") {
           setNotification({ type: "success", message: `Halo Admin, ${user.full_name}!` });
           setTimeout(() => {
             router.push("/login/select"); 
           }, 1000);
-          return;
-        }
 
-        if (user.is_verified) {
-            setNotification({ type: "success", message: `Selamat datang kembali!` });
-            setTimeout(() => {
-                router.push("/dashboard");
-            }, 1500);
         } else {
-            setIsLoading(false);
-            setShowVerifyModal(true);
+          if (user.is_verified) {
+             setNotification({ type: "success", message: `Selamat datang kembali!` });
+             setTimeout(() => {
+                router.push("/dashboard");
+             }, 1500);
+          } else {
+             setIsLoading(false);
+             setShowVerifyModal(true);
+          }
         }
 
       } else {
@@ -91,7 +89,7 @@ export default function LoginScreen() {
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900 text-center mb-2">Verifikasi Akun</h3>
                 <p className="text-slate-500 text-center mb-8 leading-relaxed text-sm">
-                    Akun Anda belum aktif. Silakan cek email Anda untuk melakukan verifikasi.
+                    Akun Anda belum aktif. Silakan cek email Anda untuk melakukan verifikasi sebelum masuk.
                 </p>
                 <button
                     onClick={() => setShowVerifyModal(false)}

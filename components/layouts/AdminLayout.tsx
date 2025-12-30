@@ -4,6 +4,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { AlertTriangle, Menu } from "lucide-react";
 import { useState, useEffect } from "react";
 import Sidebar from "../ui/Sidebar";
+import MobileRestriction from "@/components/ui/MobileRestriction";
+import TokenRestriction from "@/components/ui/TokenRestriction";
 
 const customAnimationsStyle = `
   @keyframes blob {
@@ -37,7 +39,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   const getThemeColors = () => {
-
     if (pathname?.startsWith('/admin/users')) {
       return {
         orb1: "from-cyan-300/80 to-sky-400/80",
@@ -77,6 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const theme = getThemeColors();
+  
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
@@ -97,6 +99,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <>
       <style jsx global>{customAnimationsStyle}</style>
+      <MobileRestriction />
+      <TokenRestriction />
 
       <div className="min-h-screen bg-white text-slate-800 font-sans relative overflow-hidden">
 

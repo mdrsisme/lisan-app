@@ -18,7 +18,9 @@ import {
   X,
   Sparkles,
   CheckCircle2,
-  Crown
+  Crown,
+  Key,
+  Trophy
 } from "lucide-react";
 import { themeColors } from "@/lib/color";
 
@@ -28,12 +30,18 @@ export default function UserNavbar() {
   const [userData, setUserData] = useState<any>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isModeModalOpen, setIsModeModalOpen] = useState(false);
+  const [hasToken, setHasToken] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
       setUserData(JSON.parse(userStr));
+    }
+
+    const token = localStorage.getItem("token");
+    if (token) {
+        setHasToken(true);
     }
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,6 +73,7 @@ export default function UserNavbar() {
   const navLinks = [
     { href: "/dashboard", label: "Beranda", icon: LayoutGrid },
     { href: "/my-course", label: "Kursus Saya", icon: BookOpen },
+    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/explore", label: "Jelajahi", icon: Compass },
   ];
 
@@ -117,8 +126,7 @@ export default function UserNavbar() {
                   LISAN
                 </span>
               </Link>
-
-              <div className="hidden md:flex items-center p-1">
+              <div className="hidden md:flex items-center p-1 gap-1">
                 {navLinks.map((link) => {
                   const isActive = pathname === link.href;
                   return (
@@ -231,63 +239,80 @@ export default function UserNavbar() {
 
       {isModeModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden relative animate-in zoom-in-95 duration-300 ring-1 ring-white/20">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-visible relative animate-in zoom-in-95 duration-300 ring-1 ring-white/20">
             
+            {hasToken && (
+               <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-30">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-500/10">
+                      <div className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      </div>
+                      <Key size={12} className="text-emerald-600" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                          Secure Session
+                      </span>
+                  </div>
+               </div>
+            )}
+
             <button onClick={() => setIsModeModalOpen(false)}
-              className="absolute top-6 right-6 p-2 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors z-20"
+              className="absolute top-5 right-5 p-2 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors z-20"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
-            <div className="p-10">
-              <div className="text-center mb-10">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Pilih Workspace</h2>
-                <p className="text-slate-500 text-base font-medium max-w-xs mx-auto">
-                   Sesuaikan tampilan dengan kebutuhan Anda saat ini.
+            <div className="p-8 relative overflow-hidden rounded-[2rem]">
+              
+              <div className="absolute -top-16 -left-16 w-48 h-48 bg-red-100/60 rounded-full blur-[70px] pointer-events-none" />
+              <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-rose-100/60 rounded-full blur-[70px] pointer-events-none" />
+
+              <div className="text-center mb-8 relative z-10">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Pilih Workspace</h2>
+                <p className="text-slate-500 text-sm font-medium mt-1">
+                   Sesuaikan tampilan dengan kebutuhan Anda.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                
+              <div className="grid grid-cols-1 gap-5 relative z-10">
+
                 <button
-                  onClick={() => handleModeSwitch("/admin/dashboard")}
-                  className="group relative flex items-center gap-6 p-5 rounded-[1.5rem] border-2 border-slate-100 bg-white hover:border-indigo-600 hover:shadow-lg transition-all duration-300 text-left"
+                  onClick={() => handleModeSwitch("/dashboard")}
+                  className="group relative flex items-center gap-5 p-5 rounded-[1.5rem] border-2 border-red-200 bg-red-50/50 hover:bg-red-50 transition-all duration-300 text-left shadow-sm hover:shadow-lg hover:shadow-red-500/20"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-                    <ShieldCheck size={32} />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-rose-600 text-white flex items-center justify-center shadow-md shadow-red-600/20 group-hover:scale-105 transition-transform">
+                    <LayoutGrid size={26} />
                   </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-bold text-slate-900 mb-1">Admin Panel</h4>
-                    <p className="text-sm text-slate-400 font-medium leading-relaxed">Kontrol penuh sistem, manajemen user.</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-lg font-bold text-slate-900">User Area</h4>
+                        <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-bold uppercase">Aktif</span>
+                    </div>
+                    <p className="text-sm text-slate-600 font-medium leading-relaxed truncate">Akses halaman belajar publik.</p>
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-1/2 -translate-y-1/2 right-6 text-indigo-600">
-                     <ChevronRight size={24} />
+                  <div className="text-red-600">
+                    <CheckCircle2 size={22} className="fill-red-100" />
                   </div>
                 </button>
 
                 <button
-                  onClick={() => handleModeSwitch("/dashboard")}
-                  className="group relative flex items-center gap-6 p-5 rounded-[1.5rem] border-2 border-indigo-600 bg-indigo-50/30 hover:bg-indigo-50 transition-all duration-300 text-left"
+                  onClick={() => handleModeSwitch("/admin/dashboard")}
+                  className="group relative flex items-center gap-5 p-5 rounded-[1.5rem] border-2 border-slate-100 bg-white hover:border-red-200 hover:shadow-lg transition-all duration-300 text-left"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-xl shadow-indigo-600/20 group-hover:scale-105 transition-transform duration-300">
-                    <LayoutGrid size={32} />
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-slate-800 group-hover:text-white transition-all">
+                    <ShieldCheck size={26} />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-lg font-bold text-slate-900">User Area</h4>
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider">Aktif</span>
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium leading-relaxed">Akses halaman belajar dan profil publik.</p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-slate-800">Admin Panel</h4>
+                    <p className="text-sm text-slate-400 font-medium leading-relaxed truncate group-hover:text-slate-600">Kontrol penuh sistem & konten.</p>
                   </div>
-                  <div className="absolute top-5 right-5 text-indigo-600">
-                    <CheckCircle2 size={24} className="fill-indigo-100" />
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400">
+                      <ChevronRight size={22} />
                   </div>
                 </button>
 
               </div>
             </div>
-            
-            <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 w-full" />
           </div>
         </div>
       )}
