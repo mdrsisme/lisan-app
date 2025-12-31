@@ -9,12 +9,13 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     <>
       <MobileRestriction />
       <TokenRestriction />
-      
+
       <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-indigo-100 selection:text-indigo-900 relative">
 
-        <div className="relative z-40"> 
+        <div className="relative z-40 sticky top-0"> 
           <UserNavbar />
         </div>
+        
         <main className="relative z-0 w-full">
           {children}
         </main>

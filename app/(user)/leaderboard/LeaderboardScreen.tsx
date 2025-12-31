@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { 
-  Trophy, Medal, Crown, TrendingUp, Sparkles, Zap, Shield, ArrowUp
+  Trophy, Medal, Crown, Sparkles, Zap, User as UserIcon
 } from "lucide-react";
 import { api } from "@/lib/api";
 import UserLayout from "@/components/layouts/UserLayout";
 
-// Tipe Data
 interface LeaderboardUser {
   id: string;
   full_name: string;
@@ -20,251 +19,279 @@ interface LeaderboardUser {
 
 export default function LeaderboardScreen() {
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<'weekly' | 'all_time'>('weekly');
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [currentUser, setCurrentUser] = useState<LeaderboardUser | null>(null);
+  const [myId, setMyId] = useState<string | null>(null);
 
-  // --- Dummy Data Generator (Hapus jika API sudah siap) ---
-  const generateMockData = () => {
-    const names = ["Sulthan Alif", "Nadia Puteri", "Rizky Ramadhan", "Alya Sarah", "Budi Santoso", "Citra Kirana", "Dedi Mahendra", "Eka Saputra", "Fani Rahma", "Gilang Pratama"];
-    return Array.from({ length: 15 }).map((_, i) => ({
-      id: `user-${i}`,
-      full_name: names[i] || `User ${i + 1}`,
-      avatar_url: null,
-      xp: 15000 - (i * Math.floor(Math.random() * 500 + 300)),
-      rank: i + 1,
-      is_premium: i % 3 === 0
-    }));
-  };
-  // -----------------------------------------------------
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+        try {
+            const userData = JSON.parse(userStr);
+            setMyId(userData.id);
+        } catch (e) { console.error(e); }
+    }
+  }, []);
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [period]);
+  }, [myId]);
 
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      // Simulasi API call
-      setTimeout(() => {
-        const mockData = generateMockData();
-        setUsers(mockData);
-        
-        // Simulasi kita ada di ranking 8
-        const myUser = { ...mockData[7], full_name: "Anda (Sulthan)" }; 
-        setCurrentUser(myUser);
-        
-        setLoading(false);
-      }, 800);
+      const response = await api.get(`/rankings?period=all_time&limit=50`);
 
+      if (response.success) {
+        const leaderboardData = response.data.leaderboard || [];
+        setUsers(leaderboardData);
+
+        if (myId) {
+            const me = leaderboardData.find((u: LeaderboardUser) => u.id === myId);
+            if (me) setCurrentUser(me);
+            else if (response.data.my_rank) setCurrentUser(response.data.my_rank);
+        }
+      }
     } catch (error) {
       console.error(error);
-      setLoading(false);
+    } finally {
+      setTimeout(() => setLoading(false), 500);
     }
   };
 
-  const topThree = users.slice(0, 3);
-  const restUsers = users.slice(3);
-
-  // Komponen Avatar Helper
-  const Avatar = ({ url, name, size = "md", border = "" }: { url: string | null, name: string, size?: "sm"|"md"|"lg"|"xl", border?: string }) => {
+  // Helper Avatar diperbesar
+  const Avatar = ({ url, name, size = "md", border = "" }: { url: string | null, name: string, size?: "sm"|"md"|"lg"|"xl"|"2xl", border?: string }) => {
     const sizeClass = {
         sm: "w-10 h-10 text-xs",
-        md: "w-12 h-12 text-sm",
-        lg: "w-16 h-16 text-base",
-        xl: "w-24 h-24 text-2xl"
+        md: "w-14 h-14 text-base", // Default list lebih besar
+        lg: "w-24 h-24 text-xl",    // Podium 2 & 3
+        xl: "w-24 h-24 text-2xl",
+        "2xl": "w-32 h-32 text-3xl" // Podium 1
     };
 
     return (
-      <div className={`relative rounded-full overflow-hidden shrink-0 ${sizeClass[size]} ${border} bg-slate-100 shadow-sm`}>
+      <div className={`relative rounded-full overflow-hidden shrink-0 ${sizeClass[size]} ${border} bg-slate-100 shadow-lg flex items-center justify-center`}>
         {url ? (
           <Image src={url} alt={name} fill className="object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300 text-slate-600 font-bold">
-            {name.charAt(0).toUpperCase()}
+          <div className="w-full h-full flex items-center justify-center bg-slate-200 text-slate-400 font-bold">
+            {name ? name.charAt(0).toUpperCase() : <UserIcon size={24} />}
           </div>
         )}
       </div>
     );
   };
 
+  // Helper Icon Ranking (Sticky Bar)
+  const RankIcon = ({ rank }: { rank: number }) => {
+    if (rank === 1) return <Crown size={24} className="fill-white text-white" />;
+    if (rank === 2) return <Medal size={24} className="fill-white text-white" />;
+    if (rank === 3) return <Medal size={24} className="fill-white text-white" />;
+    return <span className="font-black text-lg text-white">#{rank}</span>;
+  };
+
+  // Helper Style Badge (Sticky Bar)
+  const getRightBadgeStyle = (rank: number) => {
+    if (rank === 1) return "bg-gradient-to-br from-amber-300 to-amber-500 shadow-amber-500/50 ring-4 ring-amber-200";
+    if (rank === 2) return "bg-gradient-to-br from-slate-300 to-slate-400 shadow-slate-400/50 ring-4 ring-slate-200";
+    if (rank === 3) return "bg-gradient-to-br from-orange-300 to-orange-500 shadow-orange-500/50 ring-4 ring-orange-200";
+    return "bg-slate-700 shadow-slate-900/50 ring-4 ring-slate-600";
+  };
+
+  const EmptyPodium = ({ rank, heightClass }: { rank: number, heightClass: string }) => (
+    <div className="flex flex-col items-center w-1/3 max-w-[140px] opacity-40 grayscale">
+        <div className="relative mb-4">
+            <div className={`rounded-full bg-slate-100 border-4 border-dashed border-slate-300 flex items-center justify-center ${rank === 1 ? 'w-32 h-32' : 'w-24 h-24'}`}>
+                <UserIcon className="text-slate-300" size={rank === 1 ? 40 : 32} />
+            </div>
+        </div>
+        <div className={`w-full ${heightClass} bg-slate-100 rounded-t-3xl border-t-2 border-white/50 relative`}></div>
+    </div>
+  );
+
   return (
     <UserLayout>
-      {/* Background Ambience - Clean & Modern */}
+      {/* Background Ambience Bigger & Softer */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px]" />
-        <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[100px]" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-indigo-500/5 rounded-full blur-[150px]" />
+        <div className="absolute top-[10%] right-[-10%] w-[800px] h-[800px] bg-amber-500/5 rounded-full blur-[150px]" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.02] mix-blend-overlay" />
       </div>
 
-      <div className="min-h-screen pb-32">
-        <main className="max-w-3xl mx-auto px-4 py-8">
+      <div className="min-h-screen pb-40 pt-8">
+        <main className="max-w-4xl mx-auto px-4 sm:px-6">
           
-          {/* Header Section */}
-          <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-indigo-100 text-indigo-600 text-[10px] font-black uppercase tracking-widest mb-4 shadow-sm backdrop-blur-md">
-                <Trophy size={12} className="text-amber-500" /> Hall of Fame
-            </div>
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter mb-6">
-              Peringkat <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600">Juara</span>
+          {/* Header Bigger */}
+          <div className="text-center mb-16 animate-in fade-in slide-in-from-top-4 duration-700">
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter mb-3 drop-shadow-sm">
+              Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600">Ranking</span>
             </h1>
-
-            {/* Toggle Period - Sleek */}
-            <div className="inline-flex bg-slate-100/80 p-1 rounded-2xl shadow-inner relative">
-              <button 
-                onClick={() => setPeriod('weekly')}
-                className={`relative z-10 px-6 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${period === 'weekly' ? 'bg-white text-indigo-600 shadow-md transform scale-105' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Minggu Ini
-              </button>
-              <button 
-                onClick={() => setPeriod('all_time')}
-                className={`relative z-10 px-6 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${period === 'all_time' ? 'bg-white text-indigo-600 shadow-md transform scale-105' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Semua Waktu
-              </button>
-            </div>
+            <p className="text-slate-500 font-medium text-lg">Para juara terbaik sepanjang masa</p>
           </div>
 
           {loading ? (
-             <div className="flex justify-center py-20">
-                <div className="animate-spin w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full" />
+             <div className="flex justify-center py-24">
+                <div className="animate-spin w-12 h-12 border-[6px] border-indigo-100 border-t-indigo-600 rounded-full" />
              </div>
           ) : (
             <>
-              {/* --- PODIUM SECTION --- */}
-              <div className="relative flex justify-center items-end gap-3 md:gap-6 mb-12 px-4 min-h-[300px]">
+              {/* --- PODIUM SECTION (BIGGER) --- */}
+              <div className="relative flex justify-center items-end gap-4 md:gap-8 mb-16 px-2 min-h-[380px]">
                 
-                {/* Rank 2 (Silver) */}
-                {topThree[1] && (
-                  <div className="flex flex-col items-center animate-in slide-in-from-bottom-8 duration-700 delay-100 z-10 w-1/3 max-w-[120px]">
-                    <div className="relative mb-3 group">
-                        <Avatar url={topThree[1].avatar_url} name={topThree[1].full_name} size="lg" border="border-[3px] border-slate-300 shadow-xl" />
-                        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-slate-200 text-slate-700 text-[10px] font-black px-2 py-0.5 rounded-full border border-white shadow-sm">
-                            2
+                {/* Juara 2 (Kiri) */}
+                {users[1] ? (
+                  <div className="flex flex-col items-center animate-in slide-in-from-bottom-8 duration-700 delay-100 z-10 w-1/3 max-w-[160px]">
+                    <div className="relative mb-4 group transform transition-transform hover:-translate-y-2 duration-300">
+                        <Avatar url={users[1].avatar_url} name={users[1].full_name} size="lg" border="border-[6px] border-slate-300 shadow-2xl ring-4 ring-slate-100" />
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-sm font-black px-3 py-1 rounded-full border-4 border-slate-100 shadow-lg">
+                            #2
                         </div>
                     </div>
-                    <div className="w-full flex flex-col items-center">
-                        <p className="font-bold text-slate-800 text-xs md:text-sm truncate w-full text-center mb-1">{topThree[1].full_name.split(' ')[0]}</p>
-                        <span className="text-slate-500 text-[10px] font-bold">{topThree[1].xp} XP</span>
+                    <div className="w-full flex flex-col items-center mb-2">
+                        <p className="font-bold text-slate-800 text-sm md:text-lg truncate w-full text-center mb-1">{users[1].full_name.split(' ')[0]}</p>
+                        <span className="text-slate-500 text-xs font-bold bg-slate-100 px-3 py-1 rounded-full">{users[1].xp.toLocaleString()} XP</span>
                     </div>
-                    {/* Pedestal 2 */}
-                    <div className="w-full h-24 mt-3 bg-gradient-to-b from-slate-200 to-slate-50/20 backdrop-blur-sm rounded-t-2xl border-t border-white/60 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-white/30" />
+                    <div className="w-full h-32 mt-2 bg-gradient-to-b from-slate-200 via-slate-100 to-slate-50/20 backdrop-blur-sm rounded-t-[2.5rem] border-t border-white/80 shadow-inner relative overflow-hidden">
+                         <div className="absolute top-0 inset-x-0 h-full bg-gradient-to-b from-white/40 to-transparent" />
                     </div>
                   </div>
-                )}
+                ) : <EmptyPodium rank={2} heightClass="h-32" />}
 
-                {/* Rank 1 (Gold) */}
-                {topThree[0] && (
-                  <div className="flex flex-col items-center animate-in slide-in-from-bottom-12 duration-700 z-20 w-1/3 max-w-[140px] -mx-2">
-                    <div className="relative mb-3 group">
-                        <div className="absolute -top-7 left-1/2 -translate-x-1/2 animate-bounce-slow">
-                            <Crown size={28} className="text-amber-400 fill-amber-400 drop-shadow-md" />
+                {/* Juara 1 (Tengah - Terbesar) */}
+                {users[0] ? (
+                  <div className="flex flex-col items-center animate-in slide-in-from-bottom-12 duration-700 z-20 w-1/3 max-w-[200px] -mx-4 pb-4">
+                    <div className="relative mb-6 group transform transition-transform hover:-translate-y-2 duration-300">
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 animate-bounce-slow">
+                            <Crown size={42} className="text-amber-400 fill-amber-400 drop-shadow-xl" />
                         </div>
-                        <Avatar url={topThree[0].avatar_url} name={topThree[0].full_name} size="xl" border="border-[4px] border-amber-300 ring-4 ring-amber-100 shadow-2xl" />
-                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-xs font-black px-3 py-0.5 rounded-full border-2 border-white shadow-lg">
-                            1
+                        <Avatar url={users[0].avatar_url} name={users[0].full_name} size="2xl" border="border-[6px] border-amber-400 shadow-2xl ring-4 ring-amber-100" />
+                        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-lg font-black px-5 py-1.5 rounded-full border-4 border-amber-100 shadow-xl">
+                            #1
                         </div>
                     </div>
-                    <div className="w-full flex flex-col items-center">
-                        <p className="font-black text-slate-900 text-sm md:text-base truncate w-full text-center mb-1">{topThree[0].full_name.split(' ')[0]}</p>
-                        <span className="text-amber-500 text-xs font-black flex items-center gap-1">
-                            <Zap size={10} fill="currentColor" /> {topThree[0].xp} XP
+                    <div className="w-full flex flex-col items-center mb-2">
+                        <p className="font-black text-slate-900 text-lg md:text-xl truncate w-full text-center mb-1">{users[0].full_name.split(' ')[0]}</p>
+                        <span className="text-amber-600 bg-amber-50 text-sm font-black flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-amber-100">
+                            <Zap size={14} fill="currentColor" /> {users[0].xp.toLocaleString()} XP
                         </span>
                     </div>
-                    {/* Pedestal 1 */}
-                    <div className="w-full h-32 mt-3 bg-gradient-to-b from-amber-100 to-amber-50/20 backdrop-blur-md rounded-t-[2rem] border-t border-white/60 relative overflow-hidden shadow-xl shadow-amber-500/10">
-                        <div className="absolute inset-0 bg-white/20 animate-[shimmer_3s_infinite] skew-y-12" />
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-amber-900/10 text-6xl font-black">1</div>
+                    <div className="w-full h-44 mt-2 bg-gradient-to-b from-amber-100 via-amber-50 to-amber-50/20 backdrop-blur-md rounded-t-[3rem] border-t border-white/60 shadow-xl shadow-amber-500/10 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-white/30 animate-[shimmer_3s_infinite] skew-y-12" />
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-amber-900/10 text-8xl font-black">1</div>
                     </div>
                   </div>
-                )}
+                ) : <EmptyPodium rank={1} heightClass="h-44" />}
 
-                {/* Rank 3 (Bronze) */}
-                {topThree[2] && (
-                  <div className="flex flex-col items-center animate-in slide-in-from-bottom-8 duration-700 delay-200 z-10 w-1/3 max-w-[120px]">
-                    <div className="relative mb-3 group">
-                        <Avatar url={topThree[2].avatar_url} name={topThree[2].full_name} size="lg" border="border-[3px] border-orange-200 shadow-xl" />
-                        <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-orange-200 text-orange-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-white shadow-sm">
-                            3
+                {/* Juara 3 (Kanan) */}
+                {users[2] ? (
+                  <div className="flex flex-col items-center animate-in slide-in-from-bottom-8 duration-700 delay-200 z-10 w-1/3 max-w-[160px]">
+                    <div className="relative mb-4 group transform transition-transform hover:-translate-y-2 duration-300">
+                        <Avatar url={users[2].avatar_url} name={users[2].full_name} size="lg" border="border-[6px] border-orange-300 shadow-2xl ring-4 ring-orange-100" />
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-orange-700 text-white text-sm font-black px-3 py-1 rounded-full border-4 border-orange-100 shadow-lg">
+                            #3
                         </div>
                     </div>
-                    <div className="w-full flex flex-col items-center">
-                        <p className="font-bold text-slate-800 text-xs md:text-sm truncate w-full text-center mb-1">{topThree[2].full_name.split(' ')[0]}</p>
-                        <span className="text-slate-500 text-[10px] font-bold">{topThree[2].xp} XP</span>
+                    <div className="w-full flex flex-col items-center mb-2">
+                        <p className="font-bold text-slate-800 text-sm md:text-lg truncate w-full text-center mb-1">{users[2].full_name.split(' ')[0]}</p>
+                        <span className="text-slate-500 text-xs font-bold bg-slate-100 px-3 py-1 rounded-full">{users[2].xp.toLocaleString()} XP</span>
                     </div>
-                    {/* Pedestal 3 */}
-                    <div className="w-full h-16 mt-3 bg-gradient-to-b from-orange-100 to-orange-50/20 backdrop-blur-sm rounded-t-2xl border-t border-white/60 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-white/30" />
+                    <div className="w-full h-24 mt-2 bg-gradient-to-b from-orange-100 via-orange-50 to-orange-50/20 backdrop-blur-sm rounded-t-[2.5rem] border-t border-white/80 shadow-inner relative overflow-hidden">
+                         <div className="absolute top-0 inset-x-0 h-full bg-gradient-to-b from-white/40 to-transparent" />
                     </div>
                   </div>
-                )}
+                ) : <EmptyPodium rank={3} heightClass="h-24" />}
               </div>
 
-              {/* --- LIST SECTION --- */}
-              <div className="space-y-3 relative z-10">
-                 {restUsers.map((user, idx) => (
+              {/* --- LIST SECTION (Rank 4+) BIGGER --- */}
+              <div className="space-y-4 relative z-10 pb-12">
+                 {users.slice(3).map((user) => (
                    <div 
                      key={user.id} 
-                     className="flex items-center gap-4 p-3 pr-5 rounded-2xl bg-white/70 backdrop-blur-sm border border-white/60 hover:bg-white hover:border-indigo-100 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all duration-300 group"
+                     className={`flex items-center gap-6 p-5 rounded-[1.5rem] backdrop-blur-md border transition-all duration-300 group ${
+                        user.id === myId 
+                        ? 'bg-indigo-50/90 border-indigo-200 shadow-xl shadow-indigo-200/40 scale-[1.02] z-20' 
+                        : 'bg-white/80 border-white/80 hover:bg-white hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1'
+                     }`}
                    >
-                      <div className="w-8 text-center font-bold text-slate-400 text-sm">{user.rank}</div>
+                      <div className={`w-10 text-center font-black text-lg ${user.id === myId ? 'text-indigo-600' : 'text-slate-300'}`}>
+                        {user.rank}
+                      </div>
                       
-                      <Avatar url={user.avatar_url} name={user.full_name} size="sm" />
+                      <Avatar url={user.avatar_url} name={user.full_name} size="md" />
                       
-                      <div className="flex-1 min-w-0">
-                         <div className="flex items-center gap-2">
-                             <p className="font-bold text-slate-800 truncate text-sm">{user.full_name}</p>
-                             {user.is_premium && <Sparkles size={12} className="text-amber-500 fill-amber-500" />}
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                         <div className="flex items-center gap-2 mb-0.5">
+                             <p className={`font-bold truncate text-base ${user.id === myId ? 'text-indigo-900' : 'text-slate-800'}`}>
+                                {user.full_name}
+                             </p>
+                             {user.is_premium && <Sparkles size={16} className="text-amber-500 fill-amber-500" />}
                          </div>
                       </div>
 
-                      <div className="text-right flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 group-hover:border-indigo-50 transition-colors">
-                         <Zap size={12} className="text-indigo-400" />
-                         <span className="font-bold text-slate-700 text-sm">{user.xp}</span>
+                      <div className={`text-right flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${
+                          user.id === myId
+                          ? 'bg-white border-indigo-100 shadow-sm'
+                          : 'bg-slate-50 border-slate-100 group-hover:border-indigo-50'
+                      }`}>
+                         <Zap size={16} className={user.id === myId ? 'text-indigo-600' : 'text-indigo-400'} />
+                         <span className={`font-black text-base ${user.id === myId ? 'text-indigo-700' : 'text-slate-700'}`}>
+                            {user.xp.toLocaleString()}
+                         </span>
                       </div>
                    </div>
                  ))}
+                 
+                 {users.length === 0 && (
+                     <div className="text-center py-16 text-slate-400 bg-white/50 rounded-[2rem] border-2 border-dashed border-slate-200">
+                         <Trophy size={40} className="mx-auto mb-4 opacity-30" />
+                         <p className="text-lg font-medium">Belum ada data ranking.</p>
+                     </div>
+                 )}
               </div>
             </>
           )}
         </main>
 
-        {/* --- STICKY USER BAR (Modern Floating) --- */}
+        {/* --- STICKY USER BAR (Big & Bold) --- */}
         {currentUser && (
             <div className="fixed bottom-6 left-0 right-0 px-4 z-40 flex justify-center animate-in slide-in-from-bottom-10 duration-700 delay-500">
-                <div className="w-full max-w-lg bg-[#0F172A]/90 backdrop-blur-xl text-white rounded-3xl p-2 pl-4 pr-5 shadow-2xl shadow-slate-900/20 border border-slate-700/50 flex items-center gap-4 relative overflow-hidden group">
+                <div className="w-full max-w-2xl bg-[#0F172A]/95 backdrop-blur-2xl text-white rounded-[2rem] p-4 shadow-2xl shadow-slate-900/50 border border-slate-700/50 flex items-center justify-between gap-5 relative overflow-hidden group hover:scale-[1.01] transition-transform">
                     
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-fuchsia-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                    <div className="relative flex items-center justify-center w-8 h-8 bg-slate-700 rounded-full font-bold text-sm shrink-0">
-                        {currentUser.rank}
-                    </div>
-
-                    <div className="relative shrink-0">
-                        <Avatar url={currentUser.avatar_url} name={currentUser.full_name} size="sm" border="border-2 border-slate-600" />
-                    </div>
-
-                    <div className="flex-1 min-w-0 relative">
-                        <p className="font-bold text-sm text-white truncate">Kamu ({currentUser.full_name.split(' ')[0]})</p>
-                        <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                            <ArrowUp size={10} className="text-emerald-400" /> Naik 2 peringkat
-                        </p>
-                    </div>
-
-                    <div className="relative text-right">
-                        <div className="flex items-center gap-1.5">
-                            <Zap size={16} className="text-amber-400 fill-amber-400 animate-pulse" />
-                            <span className="font-black text-white text-base">{currentUser.xp}</span>
+                    {/* Glow Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    
+                    {/* LEFT: IDENTITY */}
+                    <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
+                        <div className="relative shrink-0">
+                             <Avatar url={currentUser.avatar_url} name={currentUser.full_name} size="md" border="border-[3px] border-slate-500" />
                         </div>
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Total XP</span>
+                        <div className="flex flex-col min-w-0">
+                             <div className="flex items-center gap-3">
+                                <p className="font-bold text-lg text-white truncate">{currentUser.full_name.split(' ')[0]}</p>
+                             </div>
+                             <p className="text-xs text-slate-400 font-medium">Keep grinding for top #1!</p>
+                        </div>
                     </div>
+                    
+                    {/* RIGHT: STATS & RANK BADGE */}
+                    <div className="flex items-center gap-6 relative z-10 shrink-0">
+                        <div className="text-right hidden sm:block">
+                             <div className="flex items-center justify-end gap-2">
+                                 <Zap size={18} className="text-amber-400 fill-amber-400" />
+                                 <span className="font-black text-white text-xl">{currentUser.xp.toLocaleString()}</span>
+                             </div>
+                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total XP</span>
+                        </div>
+
+                        {/* RANK BADGE RIGHT */}
+                        <div className={`relative flex items-center justify-center w-16 h-16 rounded-[1.2rem] shrink-0 border-2 shadow-2xl transform rotate-3 ${getRightBadgeStyle(currentUser.rank)}`}>
+                             <RankIcon rank={currentUser.rank} />
+                        </div>
+                    </div>
+
                 </div>
             </div>
         )}
-
       </div>
     </UserLayout>
   );
