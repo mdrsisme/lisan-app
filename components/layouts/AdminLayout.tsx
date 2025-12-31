@@ -10,12 +10,12 @@ import TokenRestriction from "@/components/ui/TokenRestriction";
 const customAnimationsStyle = `
   @keyframes blob {
     0% { transform: translate(0px, 0px) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
+    33% { transform: translate(50px, -50px) scale(1.2); }
+    66% { transform: translate(-30px, 30px) scale(0.8); }
     100% { transform: translate(0px, 0px) scale(1); }
   }
   .animate-blob {
-    animation: blob 10s infinite;
+    animation: blob 15s infinite;
   }
   .animation-delay-2000 {
     animation-delay: 2s;
@@ -41,9 +41,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const getThemeColors = () => {
     if (pathname?.startsWith('/admin/users')) {
       return {
-        orb1: "from-cyan-300/80 to-sky-400/80",
-        orb2: "from-blue-400/80 to-indigo-300/80",
-        orb3: "from-teal-300/80 to-cyan-200/80",
+        orb1: "from-cyan-400 via-sky-500 to-blue-600",
+        orb2: "from-violet-500 via-purple-500 to-fuchsia-500",
+        orb3: "from-teal-300 via-emerald-400 to-green-500",
       };
     }
 
@@ -53,9 +53,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       pathname?.startsWith('/admin/lessons')
     ) {
       return {
-        orb1: "from-amber-300/90 to-orange-400/90",
-        orb2: "from-yellow-300/90 to-amber-200/90",
-        orb3: "from-red-300/80 to-orange-300/80",
+        orb1: "from-orange-400 via-amber-500 to-yellow-500",
+        orb2: "from-rose-500 via-red-500 to-orange-600",
+        orb3: "from-pink-500 via-fuchsia-500 to-purple-600",
       };
     }
 
@@ -64,16 +64,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       pathname?.startsWith('/admin/faq')
     ) {
       return {
-        orb1: "from-fuchsia-400/80 to-purple-400/80",
-        orb2: "from-violet-400/80 to-fuchsia-300/80",
-        orb3: "from-pink-400/80 to-rose-300/80",
+        orb1: "from-fuchsia-500 via-pink-500 to-rose-500",
+        orb2: "from-violet-600 via-indigo-600 to-blue-600",
+        orb3: "from-cyan-400 via-blue-500 to-indigo-500",
       };
     }
 
     return {
-      orb1: "from-indigo-300/80 to-purple-400/80",
-      orb2: "from-purple-300/80 to-pink-300/80",
-      orb3: "from-blue-300/80 to-indigo-200/80",
+      orb1: "from-indigo-500 via-purple-500 to-pink-500",
+      orb2: "from-blue-500 via-cyan-500 to-teal-400",
+      orb3: "from-violet-600 via-fuchsia-500 to-pink-500",
     };
   };
 
@@ -102,16 +102,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <MobileRestriction />
       <TokenRestriction />
 
-      <div className="min-h-screen bg-white text-slate-800 font-sans relative overflow-hidden">
+      <div className="min-h-screen bg-slate-50 text-slate-800 font-sans relative overflow-hidden selection:bg-indigo-500/30">
 
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-sm z-10"></div>
+          <div className="absolute inset-0 bg-white/30 backdrop-blur-3xl z-10"></div>
 
-          <div className={`absolute -top-20 -left-20 w-96 h-96 bg-gradient-to-r ${theme.orb1} rounded-full mix-blend-normal filter blur-[60px] opacity-70 animate-blob transition-all duration-700`}></div>
+          <div className={`absolute -top-[10%] -left-[10%] w-[600px] h-[600px] bg-gradient-to-r ${theme.orb1} rounded-full mix-blend-multiply filter blur-[100px] opacity-60 animate-blob transition-all duration-1000`}></div>
 
-          <div className={`absolute top-[30%] -right-20 w-80 h-80 bg-gradient-to-r ${theme.orb2} rounded-full mix-blend-normal filter blur-[50px] opacity-70 animate-blob animation-delay-2000 transition-all duration-700`}></div>
+          <div className={`absolute top-[20%] -right-[10%] w-[500px] h-[500px] bg-gradient-to-r ${theme.orb2} rounded-full mix-blend-multiply filter blur-[100px] opacity-60 animate-blob animation-delay-2000 transition-all duration-1000`}></div>
 
-          <div className={`absolute -bottom-32 left-[10%] w-80 h-80 bg-gradient-to-r ${theme.orb3} rounded-full mix-blend-normal filter blur-[60px] opacity-70 animate-blob animation-delay-4000 transition-all duration-700`}></div>
+          <div className={`absolute -bottom-[20%] left-[20%] w-[600px] h-[600px] bg-gradient-to-r ${theme.orb3} rounded-full mix-blend-multiply filter blur-[120px] opacity-60 animate-blob animation-delay-4000 transition-all duration-1000`}></div>
         </div>
 
         <Sidebar 
@@ -121,17 +121,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           onLogoutClick={() => setIsLogoutModalOpen(true)}
         />
 
-        <div className="lg:ml-[280px] min-h-screen flex flex-col transition-all duration-300 relative z-10 bg-white/60 backdrop-blur-md shadow-[inset_0_0_100px_rgba(255,255,255,0.3)]">
+        <div className="lg:ml-[280px] min-h-screen flex flex-col transition-all duration-300 relative z-10 bg-white/50 backdrop-blur-sm shadow-[inset_0_0_100px_rgba(255,255,255,0.5)]">
 
-          <div className="lg:hidden sticky top-0 z-30 px-4 py-3 bg-white/80 backdrop-blur-lg border-b border-slate-200/50 flex items-center justify-between transition-colors duration-500">
+          <div className="lg:hidden sticky top-0 z-30 px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 flex items-center justify-between transition-colors duration-500 shadow-sm">
              <div className="flex items-center gap-3">
                <button 
                  onClick={() => setIsMobileMenuOpen(true)}
-                 className="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-black/5 transition-colors"
+                 className="p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors active:scale-95"
                >
                   <Menu size={24} />
                </button>
-               <span className="font-bold text-slate-700">LISAN Admin</span>
+               <span className="font-bold text-slate-800 tracking-tight">LISAN Admin</span>
              </div>
           </div>
 
@@ -142,32 +142,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {isMobileMenuOpen && (
           <div
-            className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm lg:hidden animate-in fade-in"
+            className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-md lg:hidden animate-in fade-in duration-200"
             onClick={() => setIsMobileMenuOpen(false)}
           />
         )}
 
         {isLogoutModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsLogoutModalOpen(false)} />
-            <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center border-4 border-red-50">
-                <AlertTriangle className="text-red-500" size={28} />
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsLogoutModalOpen(false)} />
+            <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 border border-white/20">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center border-4 border-red-50 ring-4 ring-red-50/50">
+                <AlertTriangle className="text-red-600" size={28} />
               </div>
-              <h3 className="text-lg font-bold text-center text-slate-800 mb-2">Akhiri Sesi?</h3>
-              <p className="text-sm text-center text-slate-500 mb-6">
-                Anda akan keluar dari dashboard admin dan perlu login kembali.
+              <h3 className="text-lg font-bold text-center text-slate-900 mb-2">Akhiri Sesi?</h3>
+              <p className="text-sm text-center text-slate-600 mb-6 leading-relaxed">
+                Anda akan keluar dari dashboard admin dan perlu login kembali untuk mengakses data.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setIsLogoutModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-[0.98]"
                 >
                   Batal
                 </button>
                 <button
                   onClick={confirmLogout}
-                  className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 shadow-lg shadow-red-500/20"
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/25 transition-all active:scale-[0.98]"
                 >
                   Keluar
                 </button>

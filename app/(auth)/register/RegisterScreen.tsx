@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
-  ArrowLeft, Mail, Lock, User, AtSign, Loader2, Eye, EyeOff 
+  ArrowLeft, Mail, Lock, User, AtSign, Loader2, Eye, EyeOff, AlertCircle 
 } from "lucide-react";
 import { api } from "@/lib/api";
 import Notification from "@/components/ui/Notification";
@@ -22,6 +22,13 @@ export default function RegisterScreen() {
     password: "" 
   });
 
+  const [errors, setErrors] = useState({
+    full_name: "",
+    username: "",
+    email: "",
+    password: ""
+  });
+
   const [notification, setNotification] = useState<{ type: "success" | "error" | null, message: string }>({
     type: null,
     message: ""
@@ -29,8 +36,44 @@ export default function RegisterScreen() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setNotification({ type: null, message: "" });
+
+    let isValid = true;
+    const newErrors = {
+      full_name: "",
+      username: "",
+      email: "",
+      password: ""
+    };
+
+    if (!formData.full_name.trim()) {
+      newErrors.full_name = "Nama lengkap wajib diisi";
+      isValid = false;
+    }
+    if (!formData.username.trim()) {
+      newErrors.username = "Username wajib diisi";
+      isValid = false;
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = "Email wajib diisi";
+      isValid = false;
+    }
+    if (!formData.password) {
+      newErrors.password = "Kata sandi wajib diisi";
+      isValid = false;
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Minimal 8 karakter";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+
+    if (!isValid) {
+      setNotification({ type: "error", message: "Mohon lengkapi formulir dengan benar." });
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const payload = { ...formData, role: "user" };
@@ -84,75 +127,96 @@ export default function RegisterScreen() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+
             <div className="group">
-              <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Nama Lengkap</label>
+              <div className="flex justify-between items-center mb-2 ml-1">
+                 <label className="text-sm font-bold text-slate-700">Nama Lengkap</label>
+                 {errors.full_name && <span className="text-xs text-red-500 font-bold flex items-center gap-1"><AlertCircle size={10} /> {errors.full_name}</span>}
+              </div>
               <div className="relative transition-all duration-300 transform group-focus-within:-translate-y-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none z-10">
+                <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 ${errors.full_name ? 'text-red-500' : 'text-indigo-500'}`}>
                   <User size={20} />
                 </div>
                 <input
                   type="text"
-                  required
-                  className="w-full h-14 pl-12 pr-4 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-900 font-semibold placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all duration-300"
+                  className={`w-full h-14 pl-12 pr-4 rounded-2xl border bg-slate-50/50 font-semibold outline-none transition-all duration-300 ${errors.full_name ? 'border-red-500 text-red-900 placeholder:text-red-300 focus:bg-red-50 focus:ring-4 focus:ring-red-200' : 'border-slate-200 text-slate-900 placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500'}`}
                   placeholder="Nama Kamu"
                   value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  onChange={(e) => {
+                      setFormData({ ...formData, full_name: e.target.value });
+                      if(e.target.value) setErrors({...errors, full_name: ""});
+                  }}
                 />
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Username</label>
+              <div className="flex justify-between items-center mb-2 ml-1">
+                 <label className="text-sm font-bold text-slate-700">Username</label>
+                 {errors.username && <span className="text-xs text-red-500 font-bold flex items-center gap-1"><AlertCircle size={10} /> {errors.username}</span>}
+              </div>
               <div className="relative transition-all duration-300 transform group-focus-within:-translate-y-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none z-10">
+                <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 ${errors.username ? 'text-red-500' : 'text-indigo-500'}`}>
                   <AtSign size={20} />
                 </div>
                 <input
                   type="text"
-                  required
-                  className="w-full h-14 pl-12 pr-4 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-900 font-semibold placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all duration-300"
+                  className={`w-full h-14 pl-12 pr-4 rounded-2xl border bg-slate-50/50 font-semibold outline-none transition-all duration-300 ${errors.username ? 'border-red-500 text-red-900 placeholder:text-red-300 focus:bg-red-50 focus:ring-4 focus:ring-red-200' : 'border-slate-200 text-slate-900 placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500'}`}
                   placeholder="username_unik"
                   value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  onChange={(e) => {
+                      setFormData({ ...formData, username: e.target.value });
+                      if(e.target.value) setErrors({...errors, username: ""});
+                  }}
                 />
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Email</label>
+              <div className="flex justify-between items-center mb-2 ml-1">
+                 <label className="text-sm font-bold text-slate-700">Email</label>
+                 {errors.email && <span className="text-xs text-red-500 font-bold flex items-center gap-1"><AlertCircle size={10} /> {errors.email}</span>}
+              </div>
               <div className="relative transition-all duration-300 transform group-focus-within:-translate-y-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none z-10">
+                <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 ${errors.email ? 'text-red-500' : 'text-indigo-500'}`}>
                   <Mail size={20} />
                 </div>
                 <input
                   type="email"
-                  required
-                  className="w-full h-14 pl-12 pr-4 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-900 font-semibold placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all duration-300"
+                  className={`w-full h-14 pl-12 pr-4 rounded-2xl border bg-slate-50/50 font-semibold outline-none transition-all duration-300 ${errors.email ? 'border-red-500 text-red-900 placeholder:text-red-300 focus:bg-red-50 focus:ring-4 focus:ring-red-200' : 'border-slate-200 text-slate-900 placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500'}`}
                   placeholder="nama@email.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if(e.target.value) setErrors({...errors, email: ""});
+                  }}
                 />
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Kata Sandi</label>
+              <div className="flex justify-between items-center mb-2 ml-1">
+                 <label className="text-sm font-bold text-slate-700">Kata Sandi</label>
+                 {errors.password && <span className="text-xs text-red-500 font-bold flex items-center gap-1"><AlertCircle size={10} /> {errors.password}</span>}
+              </div>
               <div className="relative transition-all duration-300 transform group-focus-within:-translate-y-1">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none z-10">
+                <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 ${errors.password ? 'text-red-500' : 'text-indigo-500'}`}>
                   <Lock size={20} />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
-                  required
-                  className="w-full h-14 pl-12 pr-12 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-900 font-semibold placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all duration-300"
+                  className={`w-full h-14 pl-12 pr-12 rounded-2xl border bg-slate-50/50 font-semibold outline-none transition-all duration-300 ${errors.password ? 'border-red-500 text-red-900 placeholder:text-red-300 focus:bg-red-50 focus:ring-4 focus:ring-red-200' : 'border-slate-200 text-slate-900 placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500'}`}
                   placeholder="Minimal 8 karakter"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => {
+                      setFormData({ ...formData, password: e.target.value });
+                      if(e.target.value) setErrors({...errors, password: ""});
+                  }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors p-1 z-10 focus:outline-none"
+                  className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors p-1 z-10 focus:outline-none ${errors.password ? 'text-red-400 hover:text-red-600' : 'text-slate-400 hover:text-indigo-600'}`}
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}

@@ -19,6 +19,11 @@ export default function LoginScreen() {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [formData, setFormData] = useState({ identifier: "", password: "" });
 
+  const [errors, setErrors] = useState({
+    identifier: "",
+    password: ""
+  });
+
   const [notification, setNotification] = useState<{ type: "success" | "error" | null, message: string }>({
     type: null,
     message: ""
@@ -26,8 +31,27 @@ export default function LoginScreen() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setNotification({ type: null, message: "" });
+
+    let isValid = true;
+    const newErrors = { identifier: "", password: "" };
+
+    if (!formData.identifier.trim()) {
+        newErrors.identifier = "Email/Username wajib diisi";
+        isValid = false;
+    }
+    if (!formData.password) {
+        newErrors.password = "Kata sandi wajib diisi";
+        isValid = false;
+    }
+
+    setErrors(newErrors);
+
+    if (!isValid) {
+        return;
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await api.post("/auth/login", formData);
@@ -36,6 +60,7 @@ export default function LoginScreen() {
         const { token, user } = response.data;
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
+        
         if (user.role === "admin") {
           setNotification({ type: "success", message: `Halo Admin, ${user.full_name}!` });
           setTimeout(() => {
@@ -126,41 +151,60 @@ export default function LoginScreen() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              
               <div className="group">
-                <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Email / Username</label>
+                <div className="flex justify-between items-center mb-2 ml-1">
+                    <label className="text-sm font-bold text-slate-700">Email / Username</label>
+                    {errors.identifier && (
+                        <span className="text-xs text-red-500 font-bold flex items-center gap-1">
+                            <AlertCircle size={10} /> {errors.identifier}
+                        </span>
+                    )}
+                </div>
                 <div className="relative transition-all duration-300 transform group-focus-within:-translate-y-1">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500 pointer-events-none z-10">
+                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 ${errors.identifier ? 'text-red-500' : 'text-amber-500'}`}>
                     <User size={20} />
                   </div>
                   <input
                     type="text"
-                    required
-                    className="w-full h-14 pl-12 pr-4 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-900 font-semibold placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all duration-300"
+                    className={`w-full h-14 pl-12 pr-4 rounded-2xl border bg-slate-50/50 font-semibold outline-none transition-all duration-300 ${errors.identifier ? 'border-red-500 text-red-900 placeholder:text-red-300 focus:bg-red-50 focus:ring-4 focus:ring-red-200' : 'border-slate-200 text-slate-900 placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500'}`}
                     placeholder="Masukkan akun Anda"
                     value={formData.identifier}
-                    onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                    onChange={(e) => {
+                        setFormData({ ...formData, identifier: e.target.value });
+                        if(e.target.value) setErrors({...errors, identifier: ""});
+                    }}
                   />
                 </div>
               </div>
 
               <div className="group">
-                <label className="block text-sm font-bold text-slate-700 mb-2 ml-1">Kata Sandi</label>
+                <div className="flex justify-between items-center mb-2 ml-1">
+                    <label className="text-sm font-bold text-slate-700">Kata Sandi</label>
+                    {errors.password && (
+                        <span className="text-xs text-red-500 font-bold flex items-center gap-1">
+                            <AlertCircle size={10} /> {errors.password}
+                        </span>
+                    )}
+                </div>
                 <div className="relative transition-all duration-300 transform group-focus-within:-translate-y-1">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500 pointer-events-none z-10">
+                  <div className={`absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10 ${errors.password ? 'text-red-500' : 'text-amber-500'}`}>
                     <Lock size={20} />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    required
-                    className="w-full h-14 pl-12 pr-12 rounded-2xl border border-slate-200 bg-slate-50/50 text-slate-900 font-semibold placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all duration-300"
+                    className={`w-full h-14 pl-12 pr-12 rounded-2xl border bg-slate-50/50 font-semibold outline-none transition-all duration-300 ${errors.password ? 'border-red-500 text-red-900 placeholder:text-red-300 focus:bg-red-50 focus:ring-4 focus:ring-red-200' : 'border-slate-200 text-slate-900 placeholder:text-slate-400/80 focus:bg-white focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500'}`}
                     placeholder="••••••••"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) => {
+                        setFormData({ ...formData, password: e.target.value });
+                        if(e.target.value) setErrors({...errors, password: ""});
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-600 transition-colors p-1 z-10 focus:outline-none"
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors p-1 z-10 focus:outline-none ${errors.password ? 'text-red-400 hover:text-red-600' : 'text-slate-400 hover:text-amber-600'}`}
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}

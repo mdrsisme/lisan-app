@@ -20,9 +20,9 @@ import {
   CheckCircle2,
   Crown,
   Key,
-  Trophy
+  Trophy // Pastikan Trophy diimport
 } from "lucide-react";
-import { themeColors } from "@/lib/color";
+// import { themeColors } from "@/lib/color"; // Opsional jika digunakan
 
 export default function UserNavbar() {
   const router = useRouter();
@@ -73,7 +73,6 @@ export default function UserNavbar() {
   const navLinks = [
     { href: "/dashboard", label: "Beranda", icon: LayoutGrid },
     { href: "/my-course", label: "Kursus Saya", icon: BookOpen },
-    { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/explore", label: "Jelajahi", icon: Compass },
   ];
 
@@ -147,7 +146,25 @@ export default function UserNavbar() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              
+              <Link 
+                href="/leaderboard"
+                className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold transition-all duration-300 group
+                  ${pathname === '/leaderboard' 
+                    ? "bg-amber-50 text-amber-600 ring-1 ring-amber-200" 
+                    : "text-slate-500 hover:bg-slate-50 hover:text-amber-600"
+                  }`}
+                title="Peringkat"
+              >
+                <div className={`p-1 rounded-full ${pathname === '/leaderboard' ? "bg-amber-100" : "bg-slate-100 group-hover:bg-amber-100"} transition-colors`}>
+                  <Trophy size={16} className={`fill-current ${pathname === '/leaderboard' ? "text-amber-500" : "text-slate-400 group-hover:text-amber-500"}`} />
+                </div>
+                <span className={pathname === '/leaderboard' ? "text-amber-700" : ""}>Leaderboard</span>
+              </Link>
+
+              <div className="hidden md:block h-6 w-px bg-slate-200 mx-1"></div>
+
               <div className="relative" ref={profileRef}>
                 <button 
                   onClick={() => setIsProfileOpen(!isProfileOpen)}

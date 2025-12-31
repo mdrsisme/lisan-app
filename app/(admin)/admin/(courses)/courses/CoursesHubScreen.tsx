@@ -13,8 +13,8 @@ export default function CourseHubPage() {
         
         <PageHeader
           theme={themeColors.solar}
-          title="Manajemen Kursus"
-          highlight="Kurikulum"
+          title="Manajemen"
+          highlight="Kursus"
           description="Pusat kontrol untuk mengelola seluruh konten pembelajaran dan modul."
           breadcrumbs={[
             { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },

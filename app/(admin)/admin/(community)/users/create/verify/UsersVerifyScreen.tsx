@@ -1,23 +1,21 @@
 "use client";
 
-import PageHeader from "@/components/ui/PageHeader";
-import Notification from "@/components/ui/Notification";
-import AdminLayout from "@/components/layouts/AdminLayout";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Mail, ShieldCheck, Loader2, KeyRound,
-  LayoutGrid, Users, UserPlus, ArrowRight, Send, CheckCircle2
+  LayoutGrid, Users, UserPlus, ArrowRight, Send, CheckCircle2, AlertCircle
 } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import Notification from "@/components/ui/Notification";
 import { api } from "@/lib/api";
 import { themeColors } from "@/lib/color";
 
-export default function VerifyContent() {
+export default function UsersVerifyScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [mode, setMode] = useState<'send' | 'verify'>('verify');
-
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | null, message: string }>({
     type: null,
@@ -27,6 +25,11 @@ export default function VerifyContent() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
 
+  const [errors, setErrors] = useState({
+    email: "",
+    code: ""
+  });
+
   useEffect(() => {
     const emailParam = searchParams.get("email");
     if (emailParam) {
@@ -34,10 +37,22 @@ export default function VerifyContent() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    setErrors({ email: "", code: "" });
+    setNotification({ type: null, message: "" });
+  }, [mode]);
+
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setNotification({ type: null, message: "" });
+
+    if (!email.trim()) {
+        setErrors(prev => ({ ...prev, email: "Email wajib diisi" }));
+        setNotification({ type: 'error', message: "Mohon isi alamat email." });
+        return;
+    }
+
+    setIsLoading(true);
 
     try {
       const res = await api.post("/auth/send-code", { email });
@@ -60,8 +75,30 @@ export default function VerifyContent() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setNotification({ type: null, message: "" });
+
+    let isValid = true;
+    const newErrors = { email: "", code: "" };
+
+    if (!email.trim()) {
+        newErrors.email = "Email wajib diisi";
+        isValid = false;
+    }
+    if (!code.trim()) {
+        newErrors.code = "Kode OTP wajib diisi";
+        isValid = false;
+    } else if (code.length < 6) {
+        newErrors.code = "Kode harus 6 digit";
+        isValid = false;
+    }
+
+    if (!isValid) {
+        setErrors(newErrors);
+        setNotification({ type: 'error', message: "Mohon lengkapi form verifikasi." });
+        return;
+    }
+
+    setIsLoading(true);
 
     try {
       const res = await api.post("/auth/verify", { email, code });
@@ -86,10 +123,8 @@ export default function VerifyContent() {
   };
 
   const oceanGradient = "bg-gradient-to-r from-[#3b82f6] to-[#10b981]";
-  const textOcean = "text-[#06b6d4]";
   const focusRing = "focus:ring-[#06b6d4]/20 focus:border-[#06b6d4]";
   const iconActive = "group-focus-within:text-[#06b6d4]";
-  const bgLight = "bg-[#ecfeff]";
 
   return (
       <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -118,6 +153,7 @@ export default function VerifyContent() {
 
                 <div className="flex p-1 bg-white rounded-2xl mb-6 border border-slate-200 shadow-sm">
                     <button
+                        type="button"
                         onClick={() => setMode('send')}
                         className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
                             mode === 'send' 
@@ -128,6 +164,7 @@ export default function VerifyContent() {
                         <Send size={16} /> Kirim Kode
                     </button>
                     <button
+                        type="button"
                         onClick={() => setMode('verify')}
                         className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
                             mode === 'verify' 
@@ -160,36 +197,54 @@ export default function VerifyContent() {
                         {mode === 'verify' && (
                             <form onSubmit={handleVerify} className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
                                 <div className="space-y-2 group">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Target Email</label>
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className={`text-xs font-bold uppercase tracking-wider ${errors.email ? 'text-red-500' : 'text-slate-500'}`}>Target Email</label>
+                                        {errors.email && (
+                                            <span className="text-[10px] font-bold text-red-500 flex items-center gap-1">
+                                                <AlertCircle size={10} /> {errors.email}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="relative">
-                                        <div className={`absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors ${iconActive}`}>
+                                        <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${errors.email ? 'text-red-400' : 'text-slate-400'} ${iconActive}`}>
                                             <Mail size={20} />
                                         </div>
                                         <input 
                                             type="email" 
-                                            required
                                             placeholder="nama@email.com"
-                                            className={`w-full h-14 pl-12 pr-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 transition-all outline-none font-bold text-slate-800 placeholder:text-slate-400 ${focusRing}`}
+                                            className={`w-full h-14 pl-12 pr-4 rounded-xl bg-slate-50 border outline-none font-bold text-slate-800 placeholder:text-slate-400 transition-all focus:bg-white focus:ring-4 ${errors.email ? 'border-red-500 focus:ring-red-100' : `border-transparent ${focusRing}`}`}
                                             value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
+                                            onChange={(e) => {
+                                                setEmail(e.target.value);
+                                                if(e.target.value) setErrors({...errors, email: ""});
+                                            }}
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2 group">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Kode OTP (6 Digit)</label>
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className={`text-xs font-bold uppercase tracking-wider ${errors.code ? 'text-red-500' : 'text-slate-500'}`}>Kode OTP (6 Digit)</label>
+                                        {errors.code && (
+                                            <span className="text-[10px] font-bold text-red-500 flex items-center gap-1">
+                                                <AlertCircle size={10} /> {errors.code}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="relative">
-                                        <div className={`absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors ${iconActive}`}>
+                                        <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${errors.code ? 'text-red-400' : 'text-slate-400'} ${iconActive}`}>
                                             <KeyRound size={20} />
                                         </div>
                                         <input 
                                             type="text" 
-                                            required
                                             maxLength={6}
                                             placeholder="• • • • • •"
-                                            className={`w-full h-14 pl-12 pr-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 transition-all outline-none font-black text-2xl text-slate-800 placeholder:text-slate-300 tracking-[0.5em] text-center ${focusRing}`}
+                                            className={`w-full h-14 pl-12 pr-4 rounded-xl bg-slate-50 border outline-none font-black text-2xl text-slate-800 placeholder:text-slate-300 tracking-[0.5em] text-center transition-all focus:bg-white focus:ring-4 ${errors.code ? 'border-red-500 focus:ring-red-100' : `border-transparent ${focusRing}`}`}
                                             value={code}
-                                            onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                            onChange={(e) => {
+                                                setCode(e.target.value.replace(/[^0-9]/g, ''));
+                                                if(e.target.value) setErrors({...errors, code: ""});
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -209,18 +264,27 @@ export default function VerifyContent() {
                         {mode === 'send' && (
                             <form onSubmit={handleSendCode} className="space-y-6 animate-in fade-in slide-in-from-left-8 duration-300">
                                 <div className="space-y-2 group">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Target Email</label>
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className={`text-xs font-bold uppercase tracking-wider ${errors.email ? 'text-red-500' : 'text-slate-500'}`}>Target Email</label>
+                                        {errors.email && (
+                                            <span className="text-[10px] font-bold text-red-500 flex items-center gap-1">
+                                                <AlertCircle size={10} /> {errors.email}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="relative">
-                                        <div className={`absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors ${iconActive}`}>
+                                        <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${errors.email ? 'text-red-400' : 'text-slate-400'} ${iconActive}`}>
                                             <Mail size={20} />
                                         </div>
                                         <input 
                                             type="email" 
-                                            required
                                             placeholder="nama@email.com"
-                                            className={`w-full h-14 pl-12 pr-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:ring-4 transition-all outline-none font-bold text-slate-800 placeholder:text-slate-400 ${focusRing}`}
+                                            className={`w-full h-14 pl-12 pr-4 rounded-xl bg-slate-50 border outline-none font-bold text-slate-800 placeholder:text-slate-400 transition-all focus:bg-white focus:ring-4 ${errors.email ? 'border-red-500 focus:ring-red-100' : `border-transparent ${focusRing}`}`}
                                             value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
+                                            onChange={(e) => {
+                                                setEmail(e.target.value);
+                                                if(e.target.value) setErrors({...errors, email: ""});
+                                            }}
                                         />
                                     </div>
                                     <p className="text-xs text-slate-400 ml-1">Pastikan email sudah terdaftar di sistem.</p>
@@ -242,7 +306,6 @@ export default function VerifyContent() {
                 </div>
             </div>
         </div>
-
       </div>
   );
 }

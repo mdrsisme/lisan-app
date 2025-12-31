@@ -1,6 +1,5 @@
 "use client";
 
-import AdminLayout from "@/components/layouts/AdminLayout";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import Link from "next/link";
@@ -13,6 +12,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import PageHeader from "@/components/ui/PageHeader";
 import { themeColors } from "@/lib/color";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 type User = {
   id: string;
@@ -37,7 +37,7 @@ type Meta = {
   has_prev: boolean;
 };
 
-export default function UserListPage() {
+export default function UsersList() {
   const [users, setUsers] = useState<User[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,7 @@ export default function UserListPage() {
     } catch (error) {
       console.error("Gagal mengambil data user");
     } finally {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 500);
     }
   };
 
@@ -94,7 +94,9 @@ export default function UserListPage() {
   };
 
   return (
-    <AdminLayout>
+    <>
+      {loading && <LoadingSpinner />}
+
       <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         <PageHeader
@@ -162,19 +164,8 @@ export default function UserListPage() {
               </thead>
               
               <tbody className="divide-y divide-slate-50">
-                {loading ? (
-                  [...Array(5)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="p-6 pl-8"><div className="flex gap-4"><div className="w-12 h-12 bg-slate-100 rounded-2xl" /><div className="space-y-2"><div className="h-4 w-32 bg-slate-100 rounded-full" /><div className="h-3 w-20 bg-slate-100 rounded-full" /></div></div></td>
-                      <td className="p-6"><div className="h-8 w-24 bg-slate-100 rounded-full" /></td>
-                      <td className="p-6"><div className="h-4 w-full bg-slate-100 rounded-full" /></td>
-                      <td className="p-6"><div className="h-4 w-28 bg-slate-100 rounded-full" /></td>
-                      <td className="p-6 pr-8 text-right"><div className="h-8 w-8 bg-slate-100 rounded-full inline-block" /></td>
-                    </tr>
-                  ))
-                ) : users.length > 0 ? (
+                {users.length > 0 ? (
                   users.map((user) => (
-                    // PERBAIKAN: Komentar dihapus dari dalam tag <tr>
                     <tr key={user.id} className="group hover:bg-[#ecfeff]/50 transition-all duration-200">
                       <td className="p-6 pl-8">
                         <div className="flex items-center gap-5">
@@ -262,25 +253,27 @@ export default function UserListPage() {
                     </tr>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan={5} className="p-24 text-center">
-                      <div className="flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
-                        <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-sm">
-                           <Search size={40} className="text-slate-300" />
+                  !loading && (
+                    <tr>
+                      <td colSpan={5} className="p-24 text-center">
+                        <div className="flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+                          <div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 shadow-sm">
+                             <Search size={40} className="text-slate-300" />
+                          </div>
+                          <h3 className="text-xl font-black text-slate-800 mb-2">Tidak ada hasil ditemukan</h3>
+                          <p className="text-slate-400 max-w-sm mx-auto mb-8 text-sm leading-relaxed">
+                            Kami tidak dapat menemukan pengguna dengan kata kunci atau filter tersebut. Coba ubah pencarian Anda.
+                          </p>
+                          <button 
+                            onClick={() => { setSearch(""); setRole(""); }}
+                            className="px-8 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 hover:-translate-y-1"
+                          >
+                            Reset Filter
+                          </button>
                         </div>
-                        <h3 className="text-xl font-black text-slate-800 mb-2">Tidak ada hasil ditemukan</h3>
-                        <p className="text-slate-400 max-w-sm mx-auto mb-8 text-sm leading-relaxed">
-                          Kami tidak dapat menemukan pengguna dengan kata kunci atau filter tersebut. Coba ubah pencarian Anda.
-                        </p>
-                        <button 
-                          onClick={() => { setSearch(""); setRole(""); }}
-                          className="px-8 py-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 hover:-translate-y-1"
-                        >
-                          Reset Filter
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
+                  )
                 )}
               </tbody>
             </table>
@@ -312,6 +305,6 @@ export default function UserListPage() {
           )}
         </div>
       </div>
-    </AdminLayout>
+    </>
   );
 }

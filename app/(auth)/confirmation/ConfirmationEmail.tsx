@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Loader2, RefreshCw, Timer } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, RefreshCw, Timer, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import Notification from "@/components/ui/Notification";
 import MobileRestriction from "@/components/ui/MobileRestriction";
@@ -16,6 +16,9 @@ function ConfirmationForm() {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(120);
+  
+  const [inputError, setInputError] = useState("");
+
   const [notification, setNotification] = useState<{ type: "success" | "error" | null, message: string }>({
     type: null,
     message: ""
@@ -36,8 +39,15 @@ function ConfirmationForm() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setNotification({ type: null, message: "" });
+    setInputError("");
+
+    if (!code.trim()) {
+        setInputError("Kode verifikasi wajib diisi");
+        return;
+    }
+
+    setIsLoading(true);
     
     try {
       await api.post("/auth/verify", { email, code });
@@ -94,18 +104,34 @@ function ConfirmationForm() {
 
         <form onSubmit={handleVerify} className="space-y-6">
           <div className="group">
-            <label className="block text-xs font-bold text-slate-500 mb-3 text-center uppercase tracking-widest">
-                Masukkan Kode 6 Digit
-            </label>
+            <div className="flex justify-center items-center gap-2 mb-3">
+                 <label className={`text-xs font-bold uppercase tracking-widest transition-colors ${inputError ? 'text-red-500' : 'text-slate-500'}`}>
+                    Masukkan Kode 6 Digit
+                 </label>
+            </div>
+            
             <input
               type="text"
-              required
               maxLength={6}
-              className="w-full h-16 text-center text-3xl tracking-[0.5em] font-bold rounded-2xl border border-slate-200 bg-slate-50/50 backdrop-blur-sm text-slate-900 placeholder:text-slate-300 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all duration-300"
+              className={`w-full h-16 text-center text-3xl tracking-[0.5em] font-bold rounded-2xl border backdrop-blur-sm outline-none transition-all duration-300 ${
+                  inputError 
+                  ? 'border-red-500 bg-red-50 text-red-900 placeholder:text-red-300 focus:ring-4 focus:ring-red-200' 
+                  : 'border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-300 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500'
+              }`}
               placeholder="000000"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => {
+                  setCode(e.target.value.replace(/[^0-9]/g, ''));
+                  if(e.target.value) setInputError("");
+              }}
             />
+            
+            {inputError && (
+                <div className="flex items-center justify-center gap-1.5 mt-2 animate-in fade-in slide-in-from-top-1">
+                    <AlertCircle size={14} className="text-red-500" />
+                    <span className="text-xs font-bold text-red-500">{inputError}</span>
+                </div>
+            )}
           </div>
 
           <button
