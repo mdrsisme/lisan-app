@@ -113,14 +113,24 @@ export default function MyCoursesScreen() {
                 </div>
             ) : filteredEnrollments.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredEnrollments.map((enrollment) => (
+                    {filteredEnrollments.map((enrollment, index) => {
+                        // Generate random gradient for fallback
+                        const gradients = [
+                            "from-pink-500 via-red-500 to-yellow-500",
+                            "from-blue-400 via-indigo-500 to-purple-500",
+                            "from-green-400 via-teal-500 to-blue-500", 
+                            "from-yellow-400 via-orange-500 to-red-500"
+                        ];
+                        const randomGradient = gradients[index % gradients.length];
+
+                        return (
                         <Link 
                             key={enrollment.id}
                             href={`/learning/${enrollment.courses.id}`}
                             className="group bg-white rounded-[1.5rem] border border-slate-100 overflow-hidden hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
                         >
                             {/* Thumbnail Area */}
-                            <div className="relative h-48 w-full bg-slate-100 overflow-hidden shrink-0">
+                            <div className="relative h-48 w-full bg-slate-900 overflow-hidden shrink-0">
                                 {enrollment.courses.thumbnail_url ? (
                                     <Image
                                         src={enrollment.courses.thumbnail_url}
@@ -129,44 +139,56 @@ export default function MyCoursesScreen() {
                                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                                     />
                                 ) : (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                                        <BookOpen size={40} className="text-slate-300" />
+                                    // Fallback: Dark Theme with Colorful Orb Glow
+                                    <div className="absolute inset-0 bg-slate-900 flex items-center justify-center overflow-hidden">
+                                        {/* Orb Glow Effect */}
+                                        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-r ${randomGradient} rounded-full blur-[50px] opacity-60 group-hover:opacity-80 group-hover:scale-125 transition-all duration-700`} />
+                                        
+                                        {/* Content on top */}
+                                        <div className="relative z-10 flex flex-col items-center gap-2">
+                                            <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-lg">
+                                                <BookOpen size={28} className="text-white drop-shadow-md" />
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Noise Texture */}
+                                        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay" />
                                     </div>
                                 )}
                                 
                                 {/* Overlay Gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
 
                                 {/* Level Badge */}
-                                <div className="absolute top-4 left-4">
-                                    <span className="bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                                <div className="absolute top-4 left-4 z-20">
+                                    <span className="bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
                                         {enrollment.courses.level}
                                     </span>
                                 </div>
 
                                 {/* Status Icon */}
-                                <div className="absolute top-4 right-4">
+                                <div className="absolute top-4 right-4 z-20">
                                     {enrollment.status === 'completed' ? (
-                                        <div className="bg-emerald-500 text-white p-1.5 rounded-full shadow-lg">
+                                        <div className="bg-emerald-500 text-white p-1.5 rounded-full shadow-lg border border-white/20">
                                             <Award size={14} />
                                         </div>
                                     ) : (
-                                        <div className="bg-white/20 backdrop-blur-md p-1.5 rounded-full text-white">
+                                        <div className="bg-black/30 backdrop-blur-md border border-white/20 p-1.5 rounded-full text-white">
                                             <Clock size={14} />
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Play Button on Hover */}
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100">
-                                    <div className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-indigo-600 shadow-xl">
-                                        <PlayCircle size={24} fill="currentColor" className="ml-0.5" />
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100 z-20">
+                                    <div className="w-12 h-12 bg-white/20 backdrop-blur-md border border-white/40 rounded-full flex items-center justify-center text-white shadow-2xl">
+                                        <PlayCircle size={28} fill="currentColor" className="ml-0.5" />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Card Body */}
-                            <div className="p-5 flex flex-col flex-1">
+                            <div className="p-5 flex flex-col flex-1 relative">
                                 <h3 className="font-bold text-slate-800 text-base leading-snug line-clamp-2 mb-4 group-hover:text-indigo-600 transition-colors">
                                     {enrollment.courses.title}
                                 </h3>
@@ -190,7 +212,7 @@ export default function MyCoursesScreen() {
                                 </div>
                             </div>
                         </Link>
-                    ))}
+                    )})}
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-100 rounded-[2rem] text-center shadow-sm">

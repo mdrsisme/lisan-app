@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { PlayCircle, Lock, Crown } from "lucide-react";
+import { PlayCircle, Crown } from "lucide-react";
 
 export interface CourseType {
   id: string;
@@ -31,21 +31,30 @@ interface CourseCardProps {
 
 export default function CourseCard({ course, index }: CourseCardProps) {
   const activeGradient = GRADIENTS[index % GRADIENTS.length];
-  const [isPremiumUser, setIsPremiumUser] = useState(false);
+  
+  // State untuk menyimpan data user
+  const [userData, setUserData] = useState<{ role: string; is_premium: boolean } | null>(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
-      const user = JSON.parse(userStr);
-      setIsPremiumUser(user.is_premium === true);
+      try {
+        setUserData(JSON.parse(userStr));
+      } catch (e) {
+        console.error("Error parsing user data", e);
+      }
     }
   }, []);
+
+  // Logic: Tampilkan Badge jika Admin ATAU Premium
+  const showAccessBadge = userData?.role === 'admin' || userData?.is_premium === true;
 
   return (
     <Link
       href={`/courses/${course.id}`}
       className="group flex flex-col bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 h-full overflow-hidden relative"
     >
+      {/* --- THUMBNAIL AREA --- */}
       <div className="relative w-full aspect-[16/9] bg-slate-900 overflow-hidden">
         {course.thumbnail_url ? (
           <div className="relative w-full h-full">
@@ -69,42 +78,41 @@ export default function CourseCard({ course, index }: CourseCardProps) {
           </div>
         )}
 
+        {/* Level Badge */}
         <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider shadow-lg">
           {course.level}
         </div>
 
-        {/* --- PREMIUM ACCESS INDICATOR --- */}
-        <div className="absolute top-4 right-4">
-            {isPremiumUser ? (
-                <div className="w-8 h-8 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 animate-in zoom-in duration-300">
+        {/* --- PREMIUM / ACCESS INDICATOR --- */}
+        {/* Hanya tampil jika Admin atau Premium User */}
+        {showAccessBadge && (
+            <div className="absolute top-4 right-4 animate-in zoom-in duration-300">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/30 ring-2 ring-white/20">
                     <Crown size={16} fill="currentColor" />
                 </div>
-            ) : (
-                <div className="w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-md text-white flex items-center justify-center border border-white/20 shadow-lg">
-                    <Lock size={14} />
-                </div>
-            )}
-        </div>
+            </div>
+        )}
       </div>
 
+      {/* --- CONTENT AREA --- */}
       <div className="flex-1 p-6 flex flex-col">
         <div className="flex-1 mb-6">
           <h3 className="text-lg font-black text-slate-900 leading-snug mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
             {course.title}
           </h3>
           <p className="text-slate-500 text-sm font-medium line-clamp-3 leading-relaxed">
-            {course.description || "Belajar materi ini untuk meningkatkan keahlian Anda ke level berikutnya."}
+            {course.description || "Pelajari materi ini untuk meningkatkan keahlian Anda ke level berikutnya."}
           </p>
         </div>
 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
           <span className={`text-xs font-bold px-4 py-2 rounded-xl transition-all
-             ${isPremiumUser 
+              ${showAccessBadge 
                 ? 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white' 
                 : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
-             }
+              }
           `}>
-            {isPremiumUser ? "Mulai Belajar" : "Lihat Detail"}
+            {showAccessBadge ? "Mulai Belajar" : "Lihat Detail"}
           </span>
         </div>
       </div>

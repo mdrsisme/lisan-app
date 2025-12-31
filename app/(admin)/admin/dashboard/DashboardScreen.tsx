@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Users,
-  Zap,
   Sparkles,
   ShieldCheck,
   TrendingUp,
@@ -88,20 +87,8 @@ export default function DashboardScreen() {
               href: "/admin/users"
             },
             {
-              key: "active",
-              label: "Pengguna Aktif",
-              value: data.active_users,
-              icon: Zap,
-              gradient: "from-amber-400 to-orange-500",
-              shadow: "shadow-amber-500/20",
-              trend: "Sedang Online",
-              bgIcon: "bg-amber-50 text-amber-500",
-              hoverBg: "hover:bg-amber-50/50 hover:border-amber-200",
-              href: "/admin/users"
-            },
-            {
               key: "premium",
-              label: "Premium",
+              label: "Member Premium",
               value: data.premium_users,
               icon: Sparkles,
               gradient: "from-pink-500 to-rose-500",
@@ -113,7 +100,7 @@ export default function DashboardScreen() {
             },
             {
               key: "verified",
-              label: "Terverifikasi",
+              label: "Akun Terverifikasi",
               value: data.verified_users,
               icon: ShieldCheck,
               gradient: "from-emerald-500 to-teal-500",
@@ -134,10 +121,10 @@ export default function DashboardScreen() {
               label: "Total Kursus",
               value: counts.courses || 0,
               icon: BookOpen,
-              gradient: "from-blue-500 to-cyan-500",
-              shadow: "shadow-blue-500/20",
-              bgIcon: "bg-blue-50 text-blue-500",
-              hoverBg: "hover:bg-blue-50/50 hover:border-blue-200",
+              gradient: "from-amber-400 to-orange-500",
+              shadow: "shadow-amber-500/20",
+              bgIcon: "bg-amber-50 text-amber-500",
+              hoverBg: "hover:bg-amber-50/50 hover:border-amber-200",
               href: "/admin/courses"
             },
             {
@@ -199,8 +186,9 @@ export default function DashboardScreen() {
     fetchAllStats();
   }, []);
 
-  const StatCard = ({ stat }: { stat: StatItem }) => (
-    <Link href={stat.href || "#"} className="block h-full">
+  // Komponen Card yang lebih Fleksibel
+  const StatCard = ({ stat, className = "" }: { stat: StatItem, className?: string }) => (
+    <Link href={stat.href || "#"} className={`block h-full ${className}`}>
       <div
         className={`group relative h-full p-6 rounded-[2rem] bg-white border border-slate-100 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md ${stat.hoverBg}`}
       >
@@ -257,15 +245,16 @@ export default function DashboardScreen() {
             ]}
           />
 
+        {/* SECTION 1: METRIK PENGGUNA (CARD PANJANG - 3 KOLOM) */}
         <div className="space-y-6">
           <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-500 pl-1 flex items-center gap-2">
              <Activity size={16} /> Metrik Pengguna
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {loading
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-[200px] rounded-[2rem] bg-white border border-slate-100 animate-pulse" />
+              ? Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-[220px] rounded-[2rem] bg-white border border-slate-100 animate-pulse" />
                 ))
               : userStats.map((stat) => (
                   <StatCard key={stat.key} stat={stat} />
@@ -273,6 +262,7 @@ export default function DashboardScreen() {
           </div>
         </div>
 
+        {/* SECTION 2: STATISTIK PEMBELAJARAN (DEFAULT GRID) */}
         <div className="space-y-6">
           <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-500 pl-1 flex items-center gap-2">
              <BookOpen size={16} /> Statistik Pembelajaran
@@ -289,6 +279,7 @@ export default function DashboardScreen() {
           </div>
         </div>
 
+        {/* SECTION 3: KONTEN LAINNYA */}
         <div className="space-y-6">
           <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-500 pl-1 flex items-center gap-2">
              <Database size={16} /> Ringkasan Konten Lainnya
