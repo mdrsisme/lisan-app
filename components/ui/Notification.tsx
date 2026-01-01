@@ -27,11 +27,13 @@ export default function Notification({ type, message, onClose }: NotificationPro
 
   return (
     <div
-      className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md transition-all duration-500 ease-out transform ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
-        } ${type === "success"
-          ? "bg-green-50/95 border-green-200 text-green-800"
-          : "bg-red-50/95 border-red-200 text-red-800"
-        }`}
+      className={`fixed top-6 right-6 z-9999 flex items-center gap-3 px-6 py-4 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border backdrop-blur-md transition-all duration-500 ease-out transform ${
+        isVisible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
+      } ${
+        type === "success"
+          ? "bg-green-50/90 border-green-200 text-green-800"
+          : "bg-red-50/90 border-red-200 text-red-800"
+      }`}
     >
       {type === "success" ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
       <p className="font-semibold text-sm">{message}</p>

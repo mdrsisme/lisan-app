@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 
 import UserLayout from "@/components/layouts/UserLayout";
+import Notification from "@/components/ui/Notification";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
-import { useNotification } from "@/components/providers/NotificationContext"; // Import Hook Context
 
 import VideoLesson from "@/components/lessons/VideoLesson";
 import TextLesson from "@/components/lessons/TextLesson";
@@ -35,7 +35,6 @@ export default function LessonPlayerScreen({
   courseId: string; moduleId: string; lessonId: string 
 }) {
   const router = useRouter();
-  const { success, error } = useNotification(); // Panggil hook notifikasi
 
   // --- STATES ---
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +44,10 @@ export default function LessonPlayerScreen({
   const [isCompleting, setIsCompleting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [practiceSuccess, setPracticeSuccess] = useState(false);
+  
+  const [notification, setNotification] = useState<{type: 'success'|'error'|null, message: string}>({
+    type: null, message: ""
+  });
 
   // --- FETCH DATA ---
   useEffect(() => {
@@ -76,17 +79,16 @@ export default function LessonPlayerScreen({
                 }
             }
         }
-      } catch (err: any) {
-        console.error("Fetch Error:", err);
-        // Panggil error global
-        error(err.message || "Terjadi kesalahan saat memuat materi.");
+      } catch (error: any) {
+        console.error("Fetch Error:", error);
+        setNotification({ type: 'error', message: error.message || "Terjadi kesalahan." });
       } finally {
         setTimeout(() => setIsLoading(false), 500);
       }
     };
 
     initData();
-  }, [lessonId, moduleId, courseId, error]); // tambahkan error ke dependency
+  }, [lessonId, moduleId, courseId]);
 
   // --- LOGIC STREAK ---
   const handleStreakLogic = async (userId: string) => {
@@ -122,8 +124,8 @@ export default function LessonPlayerScreen({
             last_activity_at: now.toISOString()
         });
       }
-    } catch (err) {
-      console.error("Streak Error (Silent):", err);
+    } catch (error) {
+      console.error("Streak Error (Silent):", error);
     }
   };
 
@@ -151,12 +153,14 @@ export default function LessonPlayerScreen({
 
             setIsCompleted(true);
             
-            // Panggil success global
-            success(`Materi Selesai! +${lesson?.xp_reward} XP ditambahkan.`);
+            // Tampilkan Notifikasi (Toast)
+            setNotification({ 
+              type: 'success', 
+              message: `Materi Selesai! +${lesson?.xp_reward} XP ditambahkan.` 
+            });
         }
-    } catch (err) {
-        // Panggil error global
-        error("Gagal menyimpan progress.");
+    } catch (error) {
+        setNotification({ type: 'error', message: "Gagal menyimpan progress." });
     } finally {
         setIsCompleting(false);
     }
@@ -165,8 +169,7 @@ export default function LessonPlayerScreen({
   const handlePracticeSuccess = () => {
     if (!practiceSuccess) {
       setPracticeSuccess(true);
-      // Panggil success global
-      success("Gerakan Bagus! Silakan klik Selesai.");
+      setNotification({ type: 'success', message: "Gerakan Bagus! Silakan klik Selesai." });
     }
   };
 
@@ -212,7 +215,12 @@ export default function LessonPlayerScreen({
     <UserLayout>
       <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col">
         
-        {/* COMPONENT NOTIFICATION DIHAPUS DARI SINI KARENA SUDAH DI GLOBAL */}
+        {/* NOTIFICATION TOAST */}
+        <Notification 
+            type={notification.type} 
+            message={notification.message} 
+            onClose={() => setNotification({ type: null, message: "" })} 
+        />
 
         {/* HEADER */}
         <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200">
@@ -269,7 +277,7 @@ export default function LessonPlayerScreen({
                         ) : isReadyToComplete ? (
                             <>Selesai & Simpan <CheckCircle2 className="text-white" strokeWidth={3} size={20} /></>
                         ) : (
-                            <>Selesaikan Tugas <Zap size={16} /></>
+                            <>Lesaikan Tugas <Zap size={16} /></>
                         )}
                     </button>
                 </div>
