@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as tf from '@tensorflow/tfjs';
@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import HandTracker from "@/components/ui/HandTracker";
 
-// --- KONFIGURASI MODEL TFJS ---
 const MODEL_URL = 'https://storage.googleapis.com/model-bisindo-v1-lisan/model.json';
 const THRESHOLD = 0.75; 
 const LABELS = [
@@ -23,22 +22,19 @@ interface CameraLessonProps {
 }
 
 export default function CameraLesson({ targetGesture, onSuccess }: CameraLessonProps) {
-  // --- STATE ---
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   
-  // TFJS Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number | null>(null);
   
-  // Logic Refs
+  const isDetectingRef = useRef(false);
   const lastUiUpdateRef = useRef<number>(0); 
   
   const [loading, setLoading] = useState(true);
   const [model, setModel] = useState<tf.GraphModel | null>(null);
   
-  // UI State
   const [prediction, setPrediction] = useState<string>("-");
   const [confidence, setConfidence] = useState<string>("0");
 
@@ -46,31 +42,30 @@ export default function CameraLesson({ targetGesture, onSuccess }: CameraLessonP
     ? targetGesture.replace(/Huruf\s+/i, "").trim().toUpperCase() 
     : "?";
 
-  // --- 1. INITIALIZE TFJS ---
   useEffect(() => {
     if (!permissionGranted) return;
 
     const initTF = async () => {
       try {
         await tf.setBackend('webgl');
+        tf.env().set('WEBGL_DELETE_TEXTURE_THRESHOLD', 0);
         await tf.ready();
+        
         const loadedModel = await tf.loadGraphModel(MODEL_URL);
         
-        // Warmup
         const dummy = tf.zeros([1, 640, 640, 3]);
-        loadedModel.execute(dummy);
-        tf.dispose(dummy);
+        const res = loadedModel.execute(dummy) as tf.Tensor;
+        tf.dispose([dummy, res]);
 
         setModel(loadedModel);
         setLoading(false);
       } catch (err) {
-        console.error("TF Init Error:", err);
+        console.error(err);
       }
     };
     initTF();
   }, [permissionGranted]);
 
-  // --- 2. START CAMERA ---
   useEffect(() => {
     if (permissionGranted && !loading && model) {
       startCamera();
@@ -101,123 +96,140 @@ export default function CameraLesson({ targetGesture, onSuccess }: CameraLessonP
         };
       }
     } catch (err) {
-      console.error("Camera Error:", err);
-      alert("Gagal mengakses kamera.");
       setPermissionGranted(false);
     }
   };
 
-  // --- 3. DETECTION LOOP ---
   const detectFrame = async () => {
-    if (!videoRef.current || !canvasRef.current || !model) return;
+    if (
+        !videoRef.current || 
+        !canvasRef.current || 
+        !model || 
+        isDetectingRef.current
+    ) {
+        requestRef.current = requestAnimationFrame(detectFrame);
+        return;
+    }
+
+    isDetectingRef.current = true;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    if (!ctx) {
+        isDetectingRef.current = false;
+        return;
+    }
 
     if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
     }
 
-    const res = await tf.tidy(() => {
-      const img = tf.browser.fromPixels(video);
-      const resized = tf.image.resizeBilinear(img, [640, 640]);
-      const casted = resized.cast('int32');
-      const expanded = casted.expandDims(0);
-      const input = expanded.toFloat().div(tf.scalar(255));
-      return model.execute(input) as tf.Tensor;
-    });
+    try {
+        const res = tf.tidy(() => {
+            const img = tf.browser.fromPixels(video);
+            const resized = tf.image.resizeNearestNeighbor(img, [640, 640]);
+            const casted = resized.cast('int32');
+            const expanded = casted.expandDims(0);
+            const input = expanded.toFloat().div(tf.scalar(255));
+            return model.execute(input) as tf.Tensor;
+        });
 
-    const trans = res.transpose([0, 2, 1]);
-    const boxes = tf.tidy(() => {
-      const w = trans.slice([0, 0, 2], [-1, -1, 1]);
-      const h = trans.slice([0, 0, 3], [-1, -1, 1]);
-      const x1 = tf.sub(trans.slice([0, 0, 0], [-1, -1, 1]), tf.div(w, 2));
-      const y1 = tf.sub(trans.slice([0, 0, 1], [-1, -1, 1]), tf.div(h, 2));
-      return tf.concat([y1, x1, tf.add(y1, h), tf.add(x1, w)], 2).squeeze();
-    });
+        const trans = res.transpose([0, 2, 1]);
+        const boxes = tf.tidy(() => {
+            const w = trans.slice([0, 0, 2], [-1, -1, 1]);
+            const h = trans.slice([0, 0, 3], [-1, -1, 1]);
+            const x1 = tf.sub(trans.slice([0, 0, 0], [-1, -1, 1]), tf.div(w, 2));
+            const y1 = tf.sub(trans.slice([0, 0, 1], [-1, -1, 1]), tf.div(h, 2));
+            return tf.concat([y1, x1, tf.add(y1, h), tf.add(x1, w)], 2).squeeze();
+        });
 
-    const [scores, classes] = tf.tidy(() => {
-      const rawScores = trans.slice([0, 0, 4], [-1, -1, 26]).squeeze();
-      return [rawScores.max(1), rawScores.argMax(1)];
-    });
+        const [scores, classes] = tf.tidy(() => {
+            const rawScores = trans.slice([0, 0, 4], [-1, -1, 26]).squeeze();
+            return [rawScores.max(1), rawScores.argMax(1)];
+        });
 
-    const nms = await tf.image.nonMaxSuppressionAsync(
-      boxes as tf.Tensor2D, 
-      scores as tf.Tensor1D, 
-      500, 
-      0.45, 
-      THRESHOLD
-    );
+        const nms = await tf.image.nonMaxSuppressionAsync(
+            boxes as tf.Tensor2D, 
+            scores as tf.Tensor1D, 
+            50, 
+            0.45, 
+            THRESHOLD
+        );
 
-    const boxesData = boxes.dataSync();
-    const scoresData = scores.dataSync();
-    const classesData = classes.dataSync();
-    const nmsIndices = nms.dataSync();
+        const [boxesData, scoresData, classesData, nmsIndices] = await Promise.all([
+            boxes.data(),
+            scores.data(),
+            classes.data(),
+            nms.data()
+        ]);
 
-    tf.dispose([res, trans, boxes, scores, classes, nms]);
+        tf.dispose([res, trans, boxes, scores, classes, nms]);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const scaleX = canvas.width / 640;
-    const scaleY = canvas.height / 640;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const scaleX = canvas.width / 640;
+        const scaleY = canvas.height / 640;
 
-    let bestLabel = "-";
-    let bestScore = 0;
+        let bestLabel = "-";
+        let bestScore = 0;
 
-    for (let i = 0; i < nmsIndices.length; i++) {
-      const idx = nmsIndices[i];
-      const [y1, x1, y2, x2] = boxesData.slice(idx * 4, (idx + 1) * 4);
-      
-      const label = LABELS[classesData[idx]];
-      const scoreRaw = scoresData[idx];
+        for (let i = 0; i < nmsIndices.length; i++) {
+            const idx = nmsIndices[i];
+            const [y1, x1, y2, x2] = boxesData.slice(idx * 4, (idx + 1) * 4);
+            
+            const label = LABELS[classesData[idx]];
+            const scoreRaw = scoresData[idx];
 
-      if (scoreRaw > bestScore) {
-        bestScore = scoreRaw;
-        bestLabel = label;
-      }
+            if (scoreRaw > bestScore) {
+                bestScore = scoreRaw;
+                bestLabel = label;
+            }
 
-      const _w = (x2 - x1) * scaleX;
-      const _h = (y2 - y1) * scaleY;
-      const _x = canvas.width - (x2 * scaleX); 
-      const _y = y1 * scaleY;
+            const _w = (x2 - x1) * scaleX;
+            const _h = (y2 - y1) * scaleY;
+            const _x = canvas.width - (x2 * scaleX); 
+            const _y = y1 * scaleY;
 
-      const isMatch = label === targetChar;
-      
-      ctx.beginPath();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = isMatch ? '#10B981' : '#6366F1';
-      ctx.rect(_x, _y, _w, _h);
-      ctx.stroke();
+            const isMatch = label === targetChar;
+            
+            ctx.beginPath();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = isMatch ? '#10B981' : '#6366F1';
+            ctx.rect(_x, _y, _w, _h);
+            ctx.stroke();
 
-      ctx.fillStyle = isMatch ? '#10B981' : '#6366F1';
-      const text = `${label} ${(scoreRaw * 100).toFixed(0)}%`;
-      const textWidth = ctx.measureText(text).width;
-      ctx.fillRect(_x, _y - 30, textWidth + 20, 30);
+            ctx.fillStyle = isMatch ? '#10B981' : '#6366F1';
+            const text = `${label} ${(scoreRaw * 100).toFixed(0)}%`;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillRect(_x, _y - 30, textWidth + 20, 30);
 
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText(text, _x + 5, _y - 8);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText(text, _x + 5, _y - 8);
+        }
+
+        const now = Date.now();
+        if (now - lastUiUpdateRef.current > 200) {
+            setPrediction(bestLabel);
+            setConfidence((bestScore * 100).toFixed(0));
+            lastUiUpdateRef.current = now;
+        }
+
+        if (bestLabel === targetChar && !isSuccess) {
+            setIsSuccess(true);
+            if (onSuccess) onSuccess();
+        }
+
+    } catch (error) {
+        console.error(error);
+    } finally {
+        isDetectingRef.current = false;
+        requestRef.current = requestAnimationFrame(detectFrame);
     }
-
-    const now = Date.now();
-    if (now - lastUiUpdateRef.current > 200) {
-        setPrediction(bestLabel);
-        setConfidence((bestScore * 100).toFixed(0));
-        lastUiUpdateRef.current = now;
-    }
-
-    // Success Logic
-    if (bestLabel === targetChar && !isSuccess) {
-      setIsSuccess(true);
-      if (onSuccess) onSuccess();
-    }
-
-    requestRef.current = requestAnimationFrame(detectFrame);
   };
 
-  // --- RENDER MODAL IZIN KAMERA ---
   if (!permissionGranted) {
     return (
       <div className="w-full max-w-4xl mx-auto h-[400px] flex items-center justify-center animate-in zoom-in-95 duration-500">
@@ -240,14 +252,10 @@ export default function CameraLesson({ targetGesture, onSuccess }: CameraLessonP
     );
   }
 
-  // --- RENDER UTAMA ---
   return (
     <div className="w-full max-w-7xl mx-auto animate-in fade-in zoom-in-95 duration-700 relative">
-      
-      {/* GRID LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         
-        {/* KOLOM KIRI: KAMERA UTAMA */}
         <div className="flex flex-col gap-4">
           <div className="relative aspect-[4/3] bg-slate-950 rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white ring-1 ring-slate-200 group">
             {loading && (
@@ -276,7 +284,6 @@ export default function CameraLesson({ targetGesture, onSuccess }: CameraLessonP
             </div>
           </div>
 
-          {/* HASIL DETEKSI (UI) */}
           <div className={`relative p-5 rounded-[2rem] border-2 transition-all duration-500 overflow-hidden ${
              isSuccess 
              ? "bg-emerald-50 border-emerald-200 shadow-lg shadow-emerald-100/50" 
@@ -300,13 +307,11 @@ export default function CameraLesson({ targetGesture, onSuccess }: CameraLessonP
           </div>
         </div>
 
-        {/* KOLOM KANAN: HAND TRACKER (VISUALIZER) */}
         <div className="flex flex-col gap-4">
           <div className="relative aspect-[4/3] rounded-[2rem] border-4 border-white ring-1 ring-slate-200 shadow-xl overflow-hidden bg-slate-900">
              <HandTracker />
           </div>
 
-          {/* TARGET */}
           <div className="relative p-5 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[2rem] shadow-xl shadow-indigo-200 text-white overflow-hidden border border-indigo-400/20">
              <div className="flex items-center justify-between mb-1 relative z-10">
                 <span className="text-xs font-bold text-indigo-200 uppercase tracking-widest">Misi Anda</span>

@@ -20,9 +20,9 @@ import {
   CheckCircle2,
   Crown,
   Key,
-  Trophy // Pastikan Trophy diimport
+  Trophy,
+  Medal // [BARU] Import icon Medal untuk Achievement
 } from "lucide-react";
-// import { themeColors } from "@/lib/color"; // Opsional jika digunakan
 
 export default function UserNavbar() {
   const router = useRouter();
@@ -148,6 +148,23 @@ export default function UserNavbar() {
 
             <div className="flex items-center gap-3 sm:gap-4">
               
+              {/* --- [BARU] MENU ACHIEVEMENTS --- */}
+              <Link 
+                href="/achievements"
+                className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold transition-all duration-300 group
+                  ${pathname === '/achievements' 
+                    ? "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200" 
+                    : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
+                  }`}
+                title="Pencapaian Saya"
+              >
+                <div className={`p-1 rounded-full ${pathname === '/achievements' ? "bg-indigo-100" : "bg-slate-100 group-hover:bg-indigo-100"} transition-colors`}>
+                  <Medal size={16} className={`fill-current ${pathname === '/achievements' ? "text-indigo-500" : "text-slate-400 group-hover:text-indigo-500"}`} />
+                </div>
+                <span className={pathname === '/achievements' ? "text-indigo-700" : ""}>Achievements</span>
+              </Link>
+
+              {/* MENU LEADERBOARD */}
               <Link 
                 href="/leaderboard"
                 className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold transition-all duration-300 group
@@ -206,6 +223,23 @@ export default function UserNavbar() {
                         <User size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> Profil Saya
                       </Link>
                       
+                      {/* [BARU] Mobile/Small Desktop Menu untuk Achievements & Leaderboard */}
+                      <Link 
+                        href="/achievements" 
+                        className="lg:hidden flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all group"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <Medal size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> Achievements
+                      </Link>
+
+                      <Link 
+                        href="/leaderboard" 
+                        className="md:hidden flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-amber-600 transition-all group"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <Trophy size={18} className="text-slate-400 group-hover:text-amber-500 transition-colors" /> Leaderboard
+                      </Link>
+
                       <Link 
                         href="/settings" 
                         className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all group"
