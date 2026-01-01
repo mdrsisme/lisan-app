@@ -1,82 +1,328 @@
-import { Camera, MonitorPlay, EyeOff, Hand, ScanFace } from "lucide-react";
+"use client";
+
+import React, { useEffect, useRef, useState } from 'react';
+import * as tf from '@tensorflow/tfjs';
+import '@tensorflow/tfjs-backend-webgl';
+import { 
+  Camera, Zap, ScanFace, CheckCircle2, Loader2, Sparkles 
+} from "lucide-react";
+import HandTracker from "@/components/ui/HandTracker";
+
+// --- KONFIGURASI MODEL TFJS ---
+const MODEL_URL = 'https://storage.googleapis.com/model-bisindo-v1-lisan/model.json';
+const THRESHOLD = 0.75; 
+const LABELS = [
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
+  'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 
+  'U', 'V', 'W', 'X', 'Y', 'Z'
+];
 
 interface CameraLessonProps {
   targetGesture: string | null;
+  onSuccess?: () => void;
 }
 
-export default function CameraLesson({ targetGesture }: CameraLessonProps) {
-  return (
-    <div className="w-full max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="bg-[#0F172A] rounded-[3rem] p-4 shadow-2xl ring-1 ring-white/10 relative overflow-hidden">
+export default function CameraLesson({ targetGesture, onSuccess }: CameraLessonProps) {
+  // --- STATE ---
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  // TFJS Refs
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const requestRef = useRef<number | null>(null);
+  
+  // Logic Refs
+  const lastUiUpdateRef = useRef<number>(0); 
+  
+  const [loading, setLoading] = useState(true);
+  const [model, setModel] = useState<tf.GraphModel | null>(null);
+  
+  // UI State
+  const [prediction, setPrediction] = useState<string>("-");
+  const [confidence, setConfidence] = useState<string>("0");
+
+  const targetChar = targetGesture 
+    ? targetGesture.replace(/Huruf\s+/i, "").trim().toUpperCase() 
+    : "?";
+
+  // --- 1. INITIALIZE TFJS ---
+  useEffect(() => {
+    if (!permissionGranted) return;
+
+    const initTF = async () => {
+      try {
+        await tf.setBackend('webgl');
+        await tf.ready();
+        const loadedModel = await tf.loadGraphModel(MODEL_URL);
         
-        {/* Viewfinder Area */}
-        <div className="aspect-[4/3] md:aspect-video bg-black rounded-[2.5rem] relative overflow-hidden flex flex-col items-center justify-center group">
-          
-          {/* Simulation Overlay Effects */}
-          <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 pointer-events-none" />
-          <div className="absolute inset-4 border-[2px] border-white/20 rounded-[2rem] pointer-events-none border-dashed" />
-          <ScanFace className="absolute top-8 right-8 text-white/20 w-8 h-8 animate-pulse" />
-          
-          {/* Live Badge */}
-          <div className="absolute top-8 left-0 right-0 flex justify-center z-20">
-            <div className="bg-black/40 backdrop-blur-md text-white px-5 py-2 rounded-full text-xs font-bold border border-white/10 flex items-center gap-2 shadow-lg">
-              <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_10px_#f43f5e]" />
-              AI CAMERA ACTIVE
-            </div>
-          </div>
+        // Warmup
+        const dummy = tf.zeros([1, 640, 640, 3]);
+        loadedModel.execute(dummy);
+        tf.dispose(dummy);
 
-          {/* Main Content Center */}
-          <div className="relative z-10 flex flex-col items-center text-center p-6">
-            <div className="w-24 h-24 rounded-full bg-slate-800/80 flex items-center justify-center mb-6 border border-slate-700 backdrop-blur-sm shadow-xl">
-              <Camera size={40} className="text-indigo-400" />
-            </div>
-            
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-3 tracking-tight">Area Praktek</h2>
-            <p className="text-slate-400 max-w-md mb-8 font-medium leading-relaxed">
-              Arahkan kamera ke tangan Anda. AI kami akan mendeteksi gerakan secara real-time.
-            </p>
+        setModel(loadedModel);
+        setLoading(false);
+      } catch (err) {
+        console.error("TF Init Error:", err);
+      }
+    };
+    initTF();
+  }, [permissionGranted]);
 
-            {targetGesture ? (
-              <div className="flex flex-col items-center gap-3">
-                <span className="text-[10px] uppercase font-bold text-slate-500 tracking-[0.2em]">Target Gerakan</span>
-                <div className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 drop-shadow-sm">
-                  {targetGesture}
-                </div>
-              </div>
-            ) : (
-              // EMPTY STATE GESTURE
-              <div className="bg-rose-500/10 text-rose-300 px-6 py-3 rounded-2xl text-sm border border-rose-500/20 font-bold flex items-center gap-2">
-                <AlertCircle size={16} />
-                Target gerakan belum diatur.
-              </div>
-            )}
-          </div>
+  // --- 2. START CAMERA ---
+  useEffect(() => {
+    if (permissionGranted && !loading && model) {
+      startCamera();
+    }
+    return () => {
+      if (requestRef.current !== null) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [permissionGranted, loading, model]);
 
-          {/* Fake Camera Controls */}
-          <div className="absolute bottom-8 w-full px-12 flex justify-between items-center z-20">
-            <button className="p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all backdrop-blur-md">
-              <MonitorPlay size={24} />
-            </button>
-            <div className="w-20 h-20 rounded-full border-4 border-white/20 flex items-center justify-center cursor-pointer hover:border-white/40 transition-colors">
-              <div className="w-16 h-16 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)]" />
-            </div>
-            <button className="p-4 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all backdrop-blur-md">
-              <EyeOff size={24} />
-            </button>
-          </div>
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 640 },
+          height: { ideal: 640 }
+        },
+        audio: false,
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current!.play();
+          detectFrame();
+        };
+      }
+    } catch (err) {
+      console.error("Camera Error:", err);
+      alert("Gagal mengakses kamera.");
+      setPermissionGranted(false);
+    }
+  };
+
+  // --- 3. DETECTION LOOP ---
+  const detectFrame = async () => {
+    if (!videoRef.current || !canvasRef.current || !model) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+    }
+
+    const res = await tf.tidy(() => {
+      const img = tf.browser.fromPixels(video);
+      const resized = tf.image.resizeBilinear(img, [640, 640]);
+      const casted = resized.cast('int32');
+      const expanded = casted.expandDims(0);
+      const input = expanded.toFloat().div(tf.scalar(255));
+      return model.execute(input) as tf.Tensor;
+    });
+
+    const trans = res.transpose([0, 2, 1]);
+    const boxes = tf.tidy(() => {
+      const w = trans.slice([0, 0, 2], [-1, -1, 1]);
+      const h = trans.slice([0, 0, 3], [-1, -1, 1]);
+      const x1 = tf.sub(trans.slice([0, 0, 0], [-1, -1, 1]), tf.div(w, 2));
+      const y1 = tf.sub(trans.slice([0, 0, 1], [-1, -1, 1]), tf.div(h, 2));
+      return tf.concat([y1, x1, tf.add(y1, h), tf.add(x1, w)], 2).squeeze();
+    });
+
+    const [scores, classes] = tf.tidy(() => {
+      const rawScores = trans.slice([0, 0, 4], [-1, -1, 26]).squeeze();
+      return [rawScores.max(1), rawScores.argMax(1)];
+    });
+
+    const nms = await tf.image.nonMaxSuppressionAsync(
+      boxes as tf.Tensor2D, 
+      scores as tf.Tensor1D, 
+      500, 
+      0.45, 
+      THRESHOLD
+    );
+
+    const boxesData = boxes.dataSync();
+    const scoresData = scores.dataSync();
+    const classesData = classes.dataSync();
+    const nmsIndices = nms.dataSync();
+
+    tf.dispose([res, trans, boxes, scores, classes, nms]);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const scaleX = canvas.width / 640;
+    const scaleY = canvas.height / 640;
+
+    let bestLabel = "-";
+    let bestScore = 0;
+
+    for (let i = 0; i < nmsIndices.length; i++) {
+      const idx = nmsIndices[i];
+      const [y1, x1, y2, x2] = boxesData.slice(idx * 4, (idx + 1) * 4);
+      
+      const label = LABELS[classesData[idx]];
+      const scoreRaw = scoresData[idx];
+
+      if (scoreRaw > bestScore) {
+        bestScore = scoreRaw;
+        bestLabel = label;
+      }
+
+      const _w = (x2 - x1) * scaleX;
+      const _h = (y2 - y1) * scaleY;
+      const _x = canvas.width - (x2 * scaleX); 
+      const _y = y1 * scaleY;
+
+      const isMatch = label === targetChar;
+      
+      ctx.beginPath();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = isMatch ? '#10B981' : '#6366F1';
+      ctx.rect(_x, _y, _w, _h);
+      ctx.stroke();
+
+      ctx.fillStyle = isMatch ? '#10B981' : '#6366F1';
+      const text = `${label} ${(scoreRaw * 100).toFixed(0)}%`;
+      const textWidth = ctx.measureText(text).width;
+      ctx.fillRect(_x, _y - 30, textWidth + 20, 30);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(text, _x + 5, _y - 8);
+    }
+
+    const now = Date.now();
+    if (now - lastUiUpdateRef.current > 200) {
+        setPrediction(bestLabel);
+        setConfidence((bestScore * 100).toFixed(0));
+        lastUiUpdateRef.current = now;
+    }
+
+    // Success Logic
+    if (bestLabel === targetChar && !isSuccess) {
+      setIsSuccess(true);
+      if (onSuccess) onSuccess();
+    }
+
+    requestRef.current = requestAnimationFrame(detectFrame);
+  };
+
+  // --- RENDER MODAL IZIN KAMERA ---
+  if (!permissionGranted) {
+    return (
+      <div className="w-full max-w-4xl mx-auto h-[400px] flex items-center justify-center animate-in zoom-in-95 duration-500">
+        <div className="text-center p-8 bg-white rounded-[2rem] shadow-xl border border-slate-100 max-w-md mx-4">
+           <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+             <Camera size={40} />
+           </div>
+           <h2 className="text-xl font-black text-slate-800 mb-2">Izin Kamera Diperlukan</h2>
+           <p className="text-slate-500 text-sm mb-6 leading-relaxed">
+             Klik tombol di bawah untuk mengaktifkan AI Detektor Tangan.
+           </p>
+           <button 
+             onClick={() => setPermissionGranted(true)}
+             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center gap-2"
+           >
+             <Zap size={18} className="fill-white" /> Mulai Praktik
+           </button>
         </div>
       </div>
+    );
+  }
 
-      {/* Helper Text */}
-      <div className="mt-6 text-center">
-        <p className="text-slate-500 text-sm font-medium flex items-center justify-center gap-2">
-          <Hand size={16} className="text-indigo-500" />
-          Pastikan tangan terlihat jelas di kamera.
-        </p>
+  // --- RENDER UTAMA ---
+  return (
+    <div className="w-full max-w-7xl mx-auto animate-in fade-in zoom-in-95 duration-700 relative">
+      
+      {/* GRID LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        
+        {/* KOLOM KIRI: KAMERA UTAMA */}
+        <div className="flex flex-col gap-4">
+          <div className="relative aspect-[4/3] bg-slate-950 rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white ring-1 ring-slate-200 group">
+            {loading && (
+              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm text-white">
+                 <Loader2 className="w-10 h-10 text-indigo-400 animate-spin mb-3" />
+                 <p className="font-semibold text-sm animate-pulse">Menyiapkan AI...</p>
+              </div>
+            )}
+            
+            <video
+              ref={videoRef}
+              className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
+              muted
+              playsInline
+            />
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+
+            <div className="absolute top-4 left-4">
+               <div className="px-3 py-1 bg-red-500/90 backdrop-blur-md rounded-full flex items-center gap-2 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  Live Detector
+               </div>
+            </div>
+          </div>
+
+          {/* HASIL DETEKSI (UI) */}
+          <div className={`relative p-5 rounded-[2rem] border-2 transition-all duration-500 overflow-hidden ${
+             isSuccess 
+             ? "bg-emerald-50 border-emerald-200 shadow-lg shadow-emerald-100/50" 
+             : "bg-white border-slate-100 shadow-sm"
+          }`}>
+             <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Terdeteksi</span>
+                {isSuccess && <CheckCircle2 className="text-emerald-500 animate-bounce" size={20} />}
+             </div>
+             <div className="flex items-end gap-3">
+                <h2 className={`text-5xl font-black transition-colors ${
+                  isSuccess ? "text-emerald-600" : "text-slate-800"
+                }`}>
+                   {prediction}
+                </h2>
+                <div className="pb-2 text-sm font-semibold text-slate-400">
+                   Akurasi: <span className={isSuccess ? "text-emerald-600" : "text-indigo-600"}>{confidence}%</span>
+                </div>
+             </div>
+             <ScanFace className="absolute -bottom-4 -right-4 w-28 h-28 text-slate-400/10 rotate-12" />
+          </div>
+        </div>
+
+        {/* KOLOM KANAN: HAND TRACKER (VISUALIZER) */}
+        <div className="flex flex-col gap-4">
+          <div className="relative aspect-[4/3] rounded-[2rem] border-4 border-white ring-1 ring-slate-200 shadow-xl overflow-hidden bg-slate-900">
+             <HandTracker />
+          </div>
+
+          {/* TARGET */}
+          <div className="relative p-5 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[2rem] shadow-xl shadow-indigo-200 text-white overflow-hidden border border-indigo-400/20">
+             <div className="flex items-center justify-between mb-1 relative z-10">
+                <span className="text-xs font-bold text-indigo-200 uppercase tracking-widest">Misi Anda</span>
+                <Sparkles size={16} className="text-yellow-300 animate-spin-slow" />
+             </div>
+             <div className="flex items-end gap-4 relative z-10">
+                <h2 className="text-5xl font-black tracking-tight">{targetChar}</h2>
+                <p className="pb-2 text-xs md:text-sm font-medium text-indigo-100/80 max-w-[150px] leading-tight">
+                   Bentuk tangan menyerupai huruf ini.
+                </p>
+             </div>
+             <Zap className="absolute -top-4 -right-4 w-32 h-32 text-white opacity-10 rotate-12" />
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
-
-// Helper icon for empty state
-import { AlertCircle } from "lucide-react";

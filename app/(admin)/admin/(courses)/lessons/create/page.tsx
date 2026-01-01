@@ -14,7 +14,9 @@ import {
   Layers,
   Upload,
   Zap,
-  Award
+  Award,
+  Camera,
+  MousePointerClick
 } from "lucide-react";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import PageHeader from "@/components/ui/PageHeader";
@@ -40,7 +42,8 @@ export default function CreateLessonPage() {
   const [moduleId, setModuleId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [type, setType] = useState("text");
+  const [type, setType] = useState("text"); // Default text
+  const [targetGesture, setTargetGesture] = useState(""); // KHUSUS CAMERA PRACTICE
   const [orderIndex, setOrderIndex] = useState(1);
   const [xpReward, setXpReward] = useState(10);
   const [isPublished, setIsPublished] = useState(false);
@@ -68,8 +71,10 @@ export default function CreateLessonPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB Limit
-        setNotif({ type: "error", message: "Ukuran file maksimal 10MB" });
+      // Limit size: Video 50MB, Gambar 10MB
+      const limit = type === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > limit) { 
+        setNotif({ type: "error", message: `Ukuran file terlalu besar (Max ${type === 'video' ? '50MB' : '10MB'})` });
         return;
       }
       setContentFile(file);
@@ -87,6 +92,13 @@ export default function CreateLessonPage() {
         return;
     }
 
+    // Validasi Khusus Camera Practice
+    if (type === 'camera_practice' && !targetGesture) {
+        setNotif({ type: "error", message: "Target Gerakan wajib diisi untuk praktik kamera!" });
+        setLoading(false);
+        return;
+    }
+
     try {
       const formData = new FormData();
       formData.append("module_id", moduleId);
@@ -96,6 +108,12 @@ export default function CreateLessonPage() {
       formData.append("order_index", orderIndex.toString());
       formData.append("xp_reward", xpReward.toString());
       formData.append("is_published", String(isPublished));
+      
+      // Kirim target_gesture jika tipe camera
+      if (type === 'camera_practice') {
+          formData.append("target_gesture", targetGesture);
+      }
+
       if (contentFile) formData.append("content", contentFile);
 
       const res = await api.post("/lessons", formData);
@@ -126,7 +144,7 @@ export default function CreateLessonPage() {
           theme={themeColors.solar}
           title="Buat Pelajaran Baru"
           highlight="Editor"
-          description="Tambahkan konten materi ke dalam modul."
+          description="Tambahkan konten materi, video, atau praktik AI."
           breadcrumbs={[
             { label: "Dashboard", href: "/admin/dashboard", icon: LayoutGrid },
             { label: "Pelajaran", href: "/admin/lessons", icon: FileText },
@@ -169,12 +187,16 @@ export default function CreateLessonPage() {
                         </label>
                         <select
                             value={type}
-                            onChange={(e) => setType(e.target.value)}
+                            onChange={(e) => {
+                                setType(e.target.value);
+                                setContentFile(null); // Reset file saat ganti tipe
+                                setFileName(null);
+                            }}
                             className="w-full px-5 py-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all outline-none font-bold text-slate-700 appearance-none cursor-pointer"
                         >
-                            <option value="text">Teks / Artikel</option>
-                            <option value="video">Video</option>
-                            <option value="quiz">Kuis</option>
+                            <option value="text">📄 Teks / Artikel</option>
+                            <option value="video">🎥 Video Pembelajaran</option>
+                            <option value="camera_practice">📸 Praktik Kamera (AI)</option>
                         </select>
                     </div>
                 </div>
@@ -188,10 +210,32 @@ export default function CreateLessonPage() {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Misal: Memahami Huruf A"
+                    placeholder="Misal: Mengenal Huruf A"
                     className="w-full px-5 py-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all outline-none font-bold text-slate-700 placeholder:text-slate-400"
                   />
                 </div>
+
+                {/* LOGIC FIELD KHUSUS CAMERA PRACTICE */}
+                {type === 'camera_practice' && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                        <label className="text-xs font-extrabold text-violet-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                            <Camera size={14} /> Target Gerakan (AI)
+                        </label>
+                        <div className="p-4 bg-violet-50 rounded-xl border border-violet-100">
+                            <input
+                                required
+                                type="text"
+                                value={targetGesture}
+                                onChange={(e) => setTargetGesture(e.target.value)}
+                                placeholder="Masukkan Label Target (Contoh: A, B, C)"
+                                className="w-full px-5 py-4 rounded-xl bg-white border-transparent focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all outline-none font-bold text-slate-700 placeholder:text-slate-400"
+                            />
+                            <p className="text-[10px] text-violet-600 mt-2 font-medium">
+                                * Masukkan satu huruf atau kata yang sesuai dengan label Model AI Bisindo.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-2">
                   <label className="text-xs font-extrabold text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
@@ -201,7 +245,7 @@ export default function CreateLessonPage() {
                     rows={6}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Tulis materi pembelajaran di sini..."
+                    placeholder={type === 'camera_practice' ? "Berikan instruksi cara melakukan gerakan ini..." : "Tulis materi pembelajaran di sini..."}
                     className="w-full px-5 py-4 rounded-xl bg-slate-50 border-transparent focus:bg-white focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all outline-none font-medium text-slate-600 placeholder:text-slate-400 resize-none leading-relaxed"
                   />
                 </div>
@@ -211,42 +255,55 @@ export default function CreateLessonPage() {
 
           <div className="space-y-8">
             
-            {/* File Upload */}
-            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
-               <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Media / File</h3>
-               </div>
-               <div className="p-6">
-                  <div 
+            {/* File Upload - Disembunyikan jika Camera Practice (Kecuali mau upload gambar panduan) */}
+            {type !== 'camera_practice' && (
+                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden animate-in fade-in">
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                        {type === 'video' ? 'Upload Video' : 'Gambar Ilustrasi'}
+                    </h3>
+                </div>
+                <div className="p-6">
+                    <div 
                     onClick={() => fileInputRef.current?.click()}
-                    className="relative w-full h-32 rounded-xl border-2 border-dashed border-slate-200 hover:border-violet-400 hover:bg-violet-50/30 transition-all cursor-pointer overflow-hidden group flex flex-col items-center justify-center bg-slate-50"
-                  >
+                    className={`relative w-full h-40 rounded-xl border-2 border-dashed transition-all cursor-pointer overflow-hidden group flex flex-col items-center justify-center ${
+                        type === 'video' 
+                        ? "border-indigo-200 bg-indigo-50/30 hover:bg-indigo-50" 
+                        : "border-slate-200 bg-slate-50 hover:bg-violet-50/30 hover:border-violet-400"
+                    }`}
+                    >
                     {fileName ? (
-                      <div className="text-center p-4">
-                         <div className="w-10 h-10 bg-violet-100 text-violet-600 rounded-lg flex items-center justify-center mx-auto mb-2">
-                           <FileText size={20} />
-                         </div>
-                         <p className="text-xs font-bold text-violet-700 truncate max-w-[200px]">{fileName}</p>
-                         <p className="text-[10px] text-slate-400 mt-1">Klik untuk ganti</p>
-                      </div>
-                    ) : (
-                      <div className="text-center p-4">
-                        <div className="w-10 h-10 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center mx-auto mb-2">
-                          <Upload size={20} />
+                        <div className="text-center p-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-sm ${type === 'video' ? 'bg-indigo-100 text-indigo-600' : 'bg-violet-100 text-violet-600'}`}>
+                                {type === 'video' ? <Video size={24} /> : <FileText size={24} />}
+                            </div>
+                            <p className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{fileName}</p>
+                            <p className="text-[10px] text-slate-400 mt-1">Klik untuk ganti file</p>
                         </div>
-                        <p className="text-xs font-bold text-slate-500">Upload File</p>
-                        <p className="text-[10px] text-slate-400 mt-1">Video / Gambar / PDF</p>
-                      </div>
+                    ) : (
+                        <div className="text-center p-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 ${type === 'video' ? 'bg-indigo-100 text-indigo-400' : 'bg-slate-100 text-slate-400'}`}>
+                            {type === 'video' ? <Video size={24} /> : <Upload size={24} />}
+                        </div>
+                        <p className="text-xs font-bold text-slate-500">
+                            {type === 'video' ? 'Upload File MP4' : 'Upload Gambar'}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                            {type === 'video' ? 'Max 50MB' : 'JPG/PNG Max 10MB'}
+                        </p>
+                        </div>
                     )}
-                  </div>
-                  <input 
+                    </div>
+                    <input 
                     type="file" 
+                    accept={type === 'video' ? "video/mp4,video/webm" : "image/png,image/jpeg,image/jpg"}
                     ref={fileInputRef} 
                     onChange={handleFileChange} 
                     className="hidden" 
-                  />
-               </div>
-            </div>
+                    />
+                </div>
+                </div>
+            )}
 
             {/* Settings */}
             <div className="bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
@@ -303,19 +360,19 @@ export default function CreateLessonPage() {
 
             <div className="flex flex-col gap-3">
                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl font-bold shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none transition-all active:scale-95"
-                >
-                  {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                  <span>Simpan Pelajaran</span>
-                </button>
-                <Link
-                  href="/admin/lessons/list"
-                  className="w-full px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-white hover:shadow-sm hover:text-slate-700 transition-all border border-transparent hover:border-slate-200 text-center block"
-                >
-                  Batal
-                </Link>
+                 type="submit"
+                 disabled={loading}
+                 className="w-full flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl font-bold shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:-translate-y-1 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none transition-all active:scale-95"
+               >
+                 {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                 <span>Simpan Pelajaran</span>
+               </button>
+               <Link
+                 href="/admin/lessons/list"
+                 className="w-full px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-white hover:shadow-sm hover:text-slate-700 transition-all border border-transparent hover:border-slate-200 text-center block"
+               >
+                 Batal
+               </Link>
             </div>
 
           </div>
