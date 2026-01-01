@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Loader2, Compass, Sparkles, Telescope } from "lucide-react";
+import { Search, Compass } from "lucide-react"; // Hapus Loader2 karena sudah pakai component khusus
 import { api } from "@/lib/api";
 import CourseCard, { CourseType } from "@/components/ui/CourseCard";
 import UserLayout from "@/components/layouts/UserLayout";
+import LoadingSpinner from "@/components/ui/LoadingSpinner"; // Import LoadingSpinner
 
 export default function ExploreScreen() {
   const [isLoading, setIsLoading] = useState(true);
@@ -29,7 +30,8 @@ export default function ExploreScreen() {
       console.error(error);
       setCourses([]); 
     } finally {
-        setIsLoading(false);
+        // Sedikit delay agar transisi loading terasa lebih smooth
+        setTimeout(() => setIsLoading(false), 500);
     }
   };
 
@@ -38,6 +40,12 @@ export default function ExploreScreen() {
     return matchesSearch;
   });
 
+  // --- 1. PANGGIL LOADING SPINNER DISINI ---
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  // --- 2. MAIN CONTENT ---
   return (
     <UserLayout>
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
@@ -77,15 +85,8 @@ export default function ExploreScreen() {
                 </div>
             </div>
 
-            {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20">
-                    <div className="relative w-16 h-16 mb-4">
-                        <div className="absolute inset-0 rounded-full border-4 border-slate-100" />
-                        <div className="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin" />
-                    </div>
-                    <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Loading...</p>
-                </div>
-            ) : filteredCourses.length > 0 ? (
+            {/* Logika Tampilan Utama (Tanpa Ternary Loading lagi) */}
+            {filteredCourses.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
                     {filteredCourses.map((course, index) => (
                         <div key={course.id} className="h-full hover:-translate-y-1 transition-transform duration-300">
@@ -96,7 +97,7 @@ export default function ExploreScreen() {
             ) : (
                 <div className="flex flex-col items-center justify-center py-24 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/60 text-center shadow-lg shadow-slate-200/50">
                     <div className="w-20 h-20 bg-slate-50 rounded-[1.5rem] flex items-center justify-center mb-4 text-slate-300 shadow-inner rotate-6">
-                        <Telescope size={36} />
+                        <Compass size={36} />
                     </div>
                     <h3 className="text-lg font-black text-slate-800 mb-1">Tidak Ditemukan</h3>
                     <p className="text-slate-500 text-xs font-medium max-w-xs mx-auto mb-6">

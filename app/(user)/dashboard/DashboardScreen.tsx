@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link"; 
 import Image from "next/image";
 import UserLayout from "@/components/layouts/UserLayout";
@@ -8,10 +8,11 @@ import { api } from "@/lib/api";
 import { 
   Megaphone, Star, ChevronLeft, ChevronRight, Calendar, 
   Loader2, Trophy, Zap, ShieldCheck, ArrowRight, 
-  Crown, Sparkles, BookOpen, PlayCircle, Clock, 
-  TrendingUp, Award 
+  Crown, Sparkles, BookOpen, PlayCircle, TrendingUp, Award,
+  MessageCircle, X, Send, Bot, User as UserIcon
 } from "lucide-react";
 
+// --- TIPE DATA ---
 interface User {
   id: string;
   full_name: string;
@@ -46,6 +47,39 @@ interface Course {
   level: string;
 }
 
+interface ChatMessage {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}
+
+// --- SIMULASI LIB CHATBOT (NANTI PINDAHKAN KE FILE LIB TERPISAH) ---
+const chatService = {
+  // Nanti ganti fungsi ini dengan call ke Gemini API
+  reply: async (message: string): Promise<string> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const lowerMsg = message.toLowerCase();
+        
+        // SIMPLE RULE BASE
+        if (lowerMsg.includes("halo") || lowerMsg.includes("hi") || lowerMsg.includes("pagi")) {
+          resolve("Halo! 👋 Selamat datang di LISAN. Ada yang bisa saya bantu seputar kursusmu hari ini?");
+        } else if (lowerMsg.includes("kursus") || lowerMsg.includes("belajar")) {
+          resolve("Untuk melihat kursusmu, kamu bisa cek bagian 'Kursus Saya' di dashboard. Atau mau saya rekomendasikan materi baru?");
+        } else if (lowerMsg.includes("harga") || lowerMsg.includes("bayar") || lowerMsg.includes("premium")) {
+          resolve("Kamu bisa upgrade ke akun Premium untuk akses tanpa batas! Cek halaman profil untuk detail paketnya.");
+        } else if (lowerMsg.includes("error") || lowerMsg.includes("masalah")) {
+          resolve("Mohon maaf atas ketidaknyamanannya. Bisa jelaskan detail masalah yang kamu alami?");
+        } else {
+          // Default response (Placeholder untuk Gemini nanti)
+          resolve("Hmm, saya belum mengerti itu. Saat ini saya masih menggunakan sistem dasar. Nanti saya akan lebih pintar setelah terhubung dengan Gemini AI! 🤖");
+        }
+      }, 1000); // Simulasi delay mengetik
+    });
+  }
+};
+
 const ANNOUNCE_GRADIENTS = [
   "from-violet-600 via-fuchsia-600 to-pink-600",
   "from-blue-600 via-cyan-600 to-teal-500",
@@ -55,11 +89,29 @@ const ANNOUNCE_GRADIENTS = [
 
 export default function DashboardScreen() {
   const [user, setUser] = useState<User | null>(null);
+  
+  // Data State
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loadingAnnounce, setLoadingAnnounce] = useState(true);
-  const [activeAnnounceIdx, setActiveAnnounceIdx] = useState(0);
   const [courses, setCourses] = useState<Course[]>([]);
+  
+  // Loading State
+  const [loadingAnnounce, setLoadingAnnounce] = useState(true);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  const [activeAnnounceIdx, setActiveAnnounceIdx] = useState(0);
+
+  // Chatbot State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { id: '1', text: 'Halo! Saya asisten LISAN. Ada yang bisa dibantu?', sender: 'bot', timestamp: new Date() }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [isBotTyping, setIsBotTyping] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages, isChatOpen]);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user"); 
@@ -128,6 +180,39 @@ export default function DashboardScreen() {
     setActiveAnnounceIdx((prev) => (prev - 1 + announcements.length) % announcements.length);
   };
 
+  // --- CHATBOT HANDLERS ---
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const newUserMsg: ChatMessage = {
+      id: Date.now().toString(),
+      text: chatInput,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setChatMessages(prev => [...prev, newUserMsg]);
+    setChatInput("");
+    setIsBotTyping(true);
+
+    try {
+      const responseText = await chatService.reply(newUserMsg.text);
+      const newBotMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: responseText,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setChatMessages(prev => [...prev, newBotMsg]);
+    } catch (error) {
+      console.error("Chat error", error);
+    } finally {
+      setIsBotTyping(false);
+    }
+  };
+
+  // --- HELPERS ---
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('id-ID', { 
         day: 'numeric', month: 'short', year: 'numeric' 
@@ -151,6 +236,7 @@ export default function DashboardScreen() {
     <UserLayout>
       <div className="min-h-screen bg-[#F8FAFC] font-sans pb-32 selection:bg-indigo-100 selection:text-indigo-900 relative overflow-hidden">
         
+        {/* Background Effects */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
             <div className="absolute -top-[30%] -left-[20%] w-[900px] h-[900px] bg-gradient-to-br from-yellow-300/30 via-amber-400/20 to-transparent rounded-full blur-[150px] mix-blend-multiply animate-pulse-slow" />
             <div className="absolute -bottom-[30%] -right-[20%] w-[900px] h-[900px] bg-gradient-to-tl from-indigo-600/30 via-violet-500/20 to-transparent rounded-full blur-[150px] mix-blend-multiply animate-pulse-slow" />
@@ -159,6 +245,7 @@ export default function DashboardScreen() {
         
         <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-10 relative z-10">
           
+          {/* USER HEADER SECTION */}
           <section className="relative w-full rounded-[2.5rem] bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl shadow-indigo-500/5 overflow-hidden p-6 sm:p-8 group">
               <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-indigo-400/60 to-transparent opacity-80"></div>
               <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-slate-50/20 pointer-events-none" />
@@ -229,6 +316,7 @@ export default function DashboardScreen() {
               </div>
           </section>
 
+          {/* ANNOUNCEMENT SECTION */}
           <section>
             <div className="flex items-center justify-between mb-4 px-1">
               <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
@@ -334,6 +422,7 @@ export default function DashboardScreen() {
             )}
           </section>
 
+          {/* MY COURSES SECTION */}
           <section>
              <div className="flex items-end justify-between mb-5 px-1">
                 <div>
@@ -365,71 +454,93 @@ export default function DashboardScreen() {
                     {courses.slice(0, 3).map((course) => (
                         <div 
                             key={course.id}
-                            className="group flex flex-col bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-1.5 transition-all duration-300 h-full relative"
+                            className="group flex flex-col bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-2 transition-all duration-500 h-full relative"
                         >
-                            <div className="relative h-44 w-full bg-slate-900 overflow-hidden shrink-0">
+                            <div className="relative h-48 w-full bg-[#020617] overflow-hidden shrink-0">
                                 {course.thumbnail_url ? (
-                                    <Image
-                                        src={course.thumbnail_url}
-                                        alt={course.title}
-                                        fill
-                                        className="object-cover opacity-90 group-hover:scale-105 transition-transform duration-500"
-                                    />
+                                    <>
+                                        <Image
+                                            src={course.thumbnail_url}
+                                            alt={course.title}
+                                            fill
+                                            className="object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#020617]/90 via-transparent to-transparent opacity-80" />
+                                    </>
                                 ) : (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-slate-100 flex items-center justify-center">
-                                        <BookOpen size={48} className="text-indigo-200" />
+                                    <div className="absolute inset-0 w-full h-full">
+                                        <div className="absolute top-[-50%] right-[-20%] w-[300px] h-[300px] bg-violet-600/40 rounded-full blur-[80px] group-hover:blur-[100px] transition-all duration-700 animate-pulse-slow" />
+                                        <div className="absolute bottom-[-50%] left-[-20%] w-[300px] h-[300px] bg-cyan-500/40 rounded-full blur-[80px] group-hover:blur-[100px] transition-all duration-700 animate-pulse-slow delay-700" />
+                                        
+                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120px] h-[120px] bg-fuchsia-500/20 rounded-full blur-[50px]" />
+
+                                        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay" />
+                                        
+                                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                                            <div className="relative group-hover:scale-110 transition-transform duration-500">
+                                                <div className="absolute inset-0 bg-white/20 blur-xl rounded-full scale-150 opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
+                                                
+                                                <BookOpen 
+                                                    size={48} 
+                                                    className="text-white/90 drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] relative z-10" 
+                                                    strokeWidth={1.5}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                                 
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
-                                
-                                <div className="absolute top-4 left-4 z-10">
-                                    <span className="bg-white/10 backdrop-blur-md text-white text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/20 shadow-sm">
+                                <div className="absolute top-4 left-4 z-20">
+                                    <span className="bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest border border-white/20 shadow-lg">
                                         {course.level}
                                     </span>
                                 </div>
 
                                 {course.progress_percentage === 100 && (
-                                    <div className="absolute top-4 right-4 z-10">
-                                        <span className="bg-emerald-500 text-white p-1.5 rounded-full shadow-lg">
-                                            <Award size={14} />
+                                    <div className="absolute top-4 right-4 z-20">
+                                        <span className="bg-emerald-500 text-white p-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-white/20">
+                                            <Award size={16} />
                                         </span>
                                     </div>
                                 )}
                             </div>
 
                             <div className="p-6 flex-1 flex flex-col relative z-10">
-                                <h3 className="text-lg font-bold text-slate-800 leading-snug line-clamp-2 mb-4 group-hover:text-indigo-600 transition-colors">
+                                <h3 className="text-xl font-bold text-slate-800 leading-snug line-clamp-2 mb-2 group-hover:text-indigo-600 transition-colors">
                                     {course.title}
                                 </h3>
                                 
-                                <div className="mt-auto">
+                                <div className="mt-auto pt-4">
                                     <div className="flex justify-between items-end mb-2">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                                            <TrendingUp size={12} className="text-indigo-500" /> Progress
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <TrendingUp size={14} className="text-indigo-500" /> 
+                                            Progress Belajar
                                         </span>
-                                        <span className="text-xs font-black text-slate-800">
+                                        <span className="text-sm font-black text-slate-800">
                                             {course.progress_percentage}%
                                         </span>
                                     </div>
-                                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner mb-5">
+                                    
+                                    <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden shadow-inner mb-6">
                                         <div 
                                             className={`h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden ${getProgressColor(course.progress_percentage)}`} 
                                             style={{ width: `${course.progress_percentage}%` }}
-                                        />
+                                        >
+                                            <div className="absolute top-0 left-0 bottom-0 right-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                                        </div>
                                     </div>
 
                                     <Link 
-                                        href={`/course/${course.id}`}
-                                        className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-xs relative overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-0.5
+                                        href={`/learning/${course.id}`}
+                                        className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm relative overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-0.5 group/btn
                                             ${course.progress_percentage === 100 
-                                            ? 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100' 
-                                            : 'bg-slate-900 text-white shadow-indigo-500/20'
+                                            ? 'bg-white text-slate-700 border-2 border-slate-100 hover:border-slate-200 hover:bg-slate-50' 
+                                            : 'bg-[#0F172A] text-white shadow-indigo-500/20'
                                             }`}
                                     >
                                         <span className="relative z-10 flex items-center gap-2">
                                             {course.progress_percentage === 0 ? "Mulai Belajar" : "Lanjutkan"}
-                                            {course.progress_percentage === 100 ? <Award size={14} /> : <ArrowRight size={14} />}
+                                            {course.progress_percentage === 100 ? <Award size={16} /> : <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />}
                                         </span>
                                     </Link>
                                 </div>
@@ -450,8 +561,109 @@ export default function DashboardScreen() {
                 </div>
              )}
           </section>
-
         </main>
+
+        {/* --- CHATBOT FLOATING COMPONENT --- */}
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+            
+            {/* Chat Window */}
+            {isChatOpen && (
+                <div className="w-[350px] h-[500px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-4 flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                                <Bot size={20} className="text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-bold text-sm">LISAN Assistant</h3>
+                                <p className="text-indigo-200 text-[10px] font-medium flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Online
+                                </p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setIsChatOpen(false)}
+                            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
+
+                    {/* Messages Area */}
+                    <div className="flex-1 bg-slate-50 p-4 overflow-y-auto space-y-4 scroll-smooth">
+                        <p className="text-center text-xs text-slate-400 my-2">Hari ini</p>
+                        
+                        {chatMessages.map((msg) => (
+                            <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border 
+                                    ${msg.sender === 'user' 
+                                        ? 'bg-indigo-100 border-indigo-200 text-indigo-600' 
+                                        : 'bg-white border-slate-200 text-violet-600'}`}>
+                                    {msg.sender === 'user' ? <UserIcon size={14} /> : <Bot size={14} />}
+                                </div>
+                                <div className={`max-w-[75%] p-3 rounded-2xl text-xs font-medium leading-relaxed shadow-sm
+                                    ${msg.sender === 'user' 
+                                        ? 'bg-indigo-600 text-white rounded-tr-sm' 
+                                        : 'bg-white text-slate-700 border border-slate-100 rounded-tl-sm'}`}>
+                                    {msg.text}
+                                    <div className={`text-[9px] mt-1 text-right ${msg.sender === 'user' ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        {isBotTyping && (
+                            <div className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-white border border-slate-200 text-violet-600 flex items-center justify-center shrink-0">
+                                    <Bot size={14} />
+                                </div>
+                                <div className="bg-white border border-slate-100 p-3 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
+                                </div>
+                            </div>
+                        )}
+                        <div ref={chatEndRef} />
+                    </div>
+
+                    {/* Input Area */}
+                    <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-100 flex gap-2">
+                        <input 
+                            type="text" 
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            placeholder="Tulis pesan..." 
+                            className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-700 placeholder:text-slate-400"
+                        />
+                        <button 
+                            type="submit"
+                            disabled={!chatInput.trim() || isBotTyping}
+                            className="w-10 h-10 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-colors shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Send size={16} className={chatInput.trim() ? "ml-0.5" : ""} />
+                        </button>
+                    </form>
+                </div>
+            )}
+
+            {/* Toggle Button */}
+            <button 
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 z-50 relative group
+                ${isChatOpen ? 'bg-slate-800 text-white rotate-90' : 'bg-gradient-to-br from-indigo-600 to-violet-600 text-white hover:shadow-indigo-500/40'}`}
+            >
+                {isChatOpen ? <X size={24} /> : <MessageCircle size={28} className="fill-white/20" />}
+                
+                {!isChatOpen && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full"></span>
+                )}
+            </button>
+        </div>
+
       </div>
     </UserLayout>
   );

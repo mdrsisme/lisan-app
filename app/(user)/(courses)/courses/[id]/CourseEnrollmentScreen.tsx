@@ -5,11 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
-  ArrowLeft, Clock, Globe, Award, PlayCircle, 
-  Check, Key, Loader2, Lock, AlertCircle, Unlock, Terminal 
+  ArrowLeft, Clock, Globe, PlayCircle, 
+  Check, Key, Loader2, Lock, AlertCircle, Unlock, Terminal, Sparkles
 } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
 import Notification from "@/components/ui/Notification";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
 
 type CourseLevel = 'beginner' | 'intermediate' | 'advanced';
@@ -79,7 +80,7 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
         console.error(error);
         setFetchError(true);
       } finally {
-        setIsLoading(false);
+        setTimeout(() => setIsLoading(false), 600);
       }
     };
 
@@ -123,14 +124,11 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
     }
   };
 
+  // Logic: Tampilkan info debug jika admin ATAU user premium
   const showDebugInfo = user?.role === 'admin' || user?.is_premium;
 
   if (isLoading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-            <Loader2 className="animate-spin text-indigo-600" size={40} />
-        </div>
-      );
+      return <LoadingSpinner />;
   }
 
   if (fetchError || !course) {
@@ -138,14 +136,14 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
         <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col">
             <UserNavbar />
             <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-slate-400">
-                    <AlertCircle size={40} />
+                <div className="w-24 h-24 bg-rose-50 rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-rose-100">
+                    <AlertCircle className="text-rose-500" size={40} />
                 </div>
-                <h1 className="text-2xl font-bold text-slate-900 mb-2">Kursus Tidak Ditemukan</h1>
-                <p className="text-slate-500 max-w-md mb-8">
-                    Kursus yang Anda cari mungkin telah dihapus atau URL salah.
+                <h1 className="text-2xl font-black text-slate-800 mb-2 tracking-tight">Kursus Tidak Ditemukan</h1>
+                <p className="text-slate-500 max-w-md mb-8 font-medium">
+                    Kursus yang Anda cari mungkin telah dihapus atau URL yang Anda tuju salah.
                 </p>
-                <Link href="/explore" className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">
+                <Link href="/explore" className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
                     Kembali ke Explore
                 </Link>
             </div>
@@ -154,7 +152,7 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8faff] font-sans pb-20">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-32">
       <UserNavbar />
       
       <Notification 
@@ -163,243 +161,267 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
         onClose={() => setNotification({ type: null, message: "" })} 
       />
 
-      <div className="bg-slate-900 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/30 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-fuchsia-600/20 rounded-full blur-[100px] pointer-events-none" />
+      {/* --- HERO HEADER --- */}
+      {/* Update 1: pt-28 diubah jadi pt-24 agar jarak ke tombol kembali lebih pas */}
+      <div className="bg-[#020617] pt-24 pb-32 relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute top-0 right-[-10%] w-[800px] h-[800px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-fuchsia-600/15 rounded-full blur-[100px] pointer-events-none mix-blend-screen" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-            <Link href="/explore" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 text-sm font-bold">
-                <ArrowLeft size={16} /> Kembali ke Explore
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+            <Link href="/explore" className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 text-xs font-bold uppercase tracking-widest group">
+                <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Kembali
             </Link>
 
             <div className="max-w-3xl">
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight mb-4 leading-tight">
+                {/* Badges */}
+                <div className="flex flex-wrap items-center gap-3 mb-5">
+                    <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1.5 rounded-lg text-[10px] font-extrabold border border-indigo-500/30 uppercase tracking-widest backdrop-blur-md">
+                        {course.level}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                        <Globe size={12} /> Bahasa Indonesia
+                    </span>
+                </div>
+
+                {/* Title */}
+                <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 tracking-tight leading-[1.1] mb-4">
                     {course.title}
                 </h1>
-                <div 
-                    className="text-lg text-slate-300 mb-6 leading-relaxed line-clamp-3 prose prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: course.description || "" }} 
-                />
-
-                <div className="flex flex-wrap items-center gap-4 md:gap-8 text-sm font-medium text-slate-300">
-                    <div className="flex items-center gap-2">
-                        <span className="bg-white/10 text-white px-3 py-1 rounded-full text-xs font-bold border border-white/20 backdrop-blur-md uppercase tracking-wider">
-                            {course.level || "Umum"}
-                        </span>
+                
+                {/* Metadata */}
+                {course.updated_at && (
+                    <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+                        <Clock size={12} />
+                        Update Terakhir: {new Date(course.updated_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Globe size={16} className="text-indigo-400" /> Bahasa Indonesia
-                    </div>
-                    {course.updated_at && (
-                        <div className="flex items-center gap-2">
-                            <Clock size={16} className="text-indigo-400" /> 
-                            Update: {new Date(course.updated_at).toLocaleDateString('id-ID')}
-                        </div>
-                    )}
-                </div>
+                )}
             </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
+      {/* --- MAIN CONTENT GRID --- */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-16 relative z-20">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
             
+            {/* LEFT COLUMN: Content */}
             <div className="space-y-8">
-                <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
-                    <h3 className="text-xl font-black text-slate-900 mb-6">Tentang Kursus Ini</h3>
+                {/* Description Card */}
+                <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-xl shadow-slate-200/40">
+                    <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                        <div className="p-2 bg-amber-50 rounded-lg text-amber-500">
+                            <Sparkles size={18} />
+                        </div>
+                        Tentang Kursus
+                    </h3>
                     <div 
-                        className="prose prose-slate prose-sm max-w-none text-slate-600 leading-loose"
-                        dangerouslySetInnerHTML={{ __html: course.description || "" }}
+                        className="prose prose-slate prose-sm max-w-none text-slate-600 leading-relaxed font-medium"
+                        dangerouslySetInnerHTML={{ __html: course.description || "<p>Tidak ada deskripsi tersedia.</p>" }}
                     />
                 </div>
 
-                <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
-                    <h3 className="text-xl font-black text-slate-900 mb-6">Materi Pembelajaran</h3>
+                {/* Syllabus Preview */}
+                <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-xl shadow-slate-200/40">
+                    <h3 className="text-lg font-black text-slate-900 mb-6">Materi Pembelajaran</h3>
                     <div className="space-y-3">
-                        <div className="border border-slate-100 rounded-3xl overflow-hidden">
-                            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                                <h4 className="font-bold text-slate-800 text-sm">Modul Pembelajaran</h4>
-                                <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200">Video & Materi</span>
-                            </div>
-                            <div className="divide-y divide-slate-50 px-6 py-6 text-center">
-                                <div className="flex flex-col items-center justify-center py-4 text-slate-400 gap-2">
-                                    <Lock size={24} className="opacity-50" />
-                                    <p className="text-sm font-medium">Silakan daftar untuk membuka akses materi.</p>
+                        <div className="group border border-slate-100 rounded-3xl overflow-hidden hover:border-indigo-100 transition-colors">
+                            <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-bold text-slate-800 text-sm">Modul Utama</h4>
+                                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Video Interaktif & Kuis</p>
                                 </div>
+                                <div className="p-2 bg-slate-100 rounded-full text-slate-400">
+                                    <Lock size={14} />
+                                </div>
+                            </div>
+                            <div className="p-8 text-center bg-white">
+                                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-50 text-slate-300 mb-3 rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                                    <Lock size={24} />
+                                </div>
+                                <p className="text-sm font-bold text-slate-600">Konten Terkunci</p>
+                                <p className="text-xs text-slate-400 mt-1">Daftar sekarang untuk mengakses materi ini.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="lg:relative">
-                <div className="sticky top-24 space-y-6">
+            {/* RIGHT COLUMN: Sticky Sidebar */}
+            <div className="lg:sticky lg:top-28">
+                <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden relative ring-1 ring-slate-100/50">
                     
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden ring-1 ring-slate-100/50">
-                        <div className="relative h-52 w-full bg-slate-900">
-                            {course.thumbnail_url ? (
-                                <Image 
-                                    src={course.thumbnail_url} 
-                                    alt={course.title} 
-                                    fill 
-                                    className="object-cover opacity-90"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 opacity-40" />
-                                    <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.08]" />
-                                    <PlayCircle size={56} className="text-white relative z-10 drop-shadow-2xl" />
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-8">
-                            
-                            {showDebugInfo && (
-                                <div className="mb-6 p-4 bg-slate-900 rounded-xl border border-slate-700 shadow-inner">
-                                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-700">
-                                        <Terminal size={14} className="text-rose-400" />
-                                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
-                                            Debug Information
-                                        </span>
-                                    </div>
-                                    <div className="space-y-2 font-mono text-[11px] text-slate-300 break-all">
-                                        {user?.role === 'admin' && (
-                                            <>
-                                                <div className="flex flex-col">
-                                                    <span className="text-slate-500 font-bold mb-0.5">User ID:</span>
-                                                    <span className="bg-slate-800 px-2 py-1 rounded border border-slate-700 select-all cursor-text hover:bg-slate-700 transition-colors">
-                                                        {user?.id}
-                                                    </span>
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-slate-500 font-bold mb-0.5">Course ID:</span>
-                                                    <span className="bg-slate-800 px-2 py-1 rounded border border-slate-700 select-all cursor-text hover:bg-slate-700 transition-colors">
-                                                        {course?.id}
-                                                    </span>
-                                                </div>
-                                            </>
-                                        )}
-                                        
-                                        {user?.is_premium && course.access_key && (
-                                            <div className="flex flex-col">
-                                                <span className="text-amber-500 font-bold mb-0.5 flex items-center gap-1">
-                                                    <Key size={10} /> Access Key (Premium Only):
-                                                </span>
-                                                <span className="bg-slate-800 px-2 py-1 rounded border border-slate-700 select-all cursor-text text-amber-200 hover:bg-slate-700 transition-colors">
-                                                    {course.access_key}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {isEnrolled ? (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                    <div className="flex items-start gap-4 bg-emerald-50/80 border border-emerald-100 p-5 rounded-3xl">
-                                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                                            <Check size={20} strokeWidth={3} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest mb-1">Status Aktif</p>
-                                            <p className="text-sm font-bold text-emerald-900 leading-tight">
-                                                Anda sudah terdaftar di kursus ini.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <Link 
-                                        href={`/learning/${course.id}`} 
-                                        className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-bold text-lg hover:bg-emerald-700 hover:shadow-xl hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 group transform active:scale-95"
-                                    >
-                                        <PlayCircle size={22} className="group-hover:scale-110 transition-transform"/>
-                                        Lihat Modul
-                                    </Link>
-                                    
-                                    {enrollmentData?.progress_percentage >= 0 && (
-                                        <div className="space-y-2 pt-2">
-                                            <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                                <span>Progres Belajar</span>
-                                                <span>{enrollmentData.progress_percentage}%</span>
-                                            </div>
-                                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                                                <div 
-                                                    className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.4)]" 
-                                                    style={{ width: `${enrollmentData.progress_percentage}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-3xl font-black text-slate-900 tracking-tight">
-                                            Gratis
-                                        </h2>
-                                        <span className="px-3 py-1 rounded-full bg-rose-50 text-rose-500 text-xs font-bold border border-rose-100 line-through decoration-rose-500/50">
-                                            Premium
-                                        </span>
-                                    </div>
-
-                                    {course.access_key ? (
-                                        <div className="space-y-2">
-                                            <label className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">
-                                                Kode Akses
-                                            </label>
-                                            <div className="relative group">
-                                                <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-indigo-500 group-focus-within:text-indigo-600 transition-colors">
-                                                    <Key size={20} />
-                                                </div>
-                                                <input 
-                                                    type="text" 
-                                                    placeholder="Masukkan kode unik..."
-                                                    className="w-full h-14 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 outline-none text-sm placeholder:text-slate-400 placeholder:font-normal"
-                                                    value={accessKey}
-                                                    onChange={(e) => setAccessKey(e.target.value)}
-                                                />
-                                            </div>
-                                            <p className="text-[10px] text-slate-400 px-1 font-medium">
-                                                *Diperlukan untuk validasi pendaftaran.
-                                            </p>
-                                        </div>
-                                    ) : (
-                                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
-                                            <div className="bg-emerald-100 p-2 rounded-full text-emerald-600">
-                                                <Unlock size={20} />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-emerald-800">Akses Publik</p>
-                                                <p className="text-xs text-emerald-600 font-medium">Anda bisa langsung mendaftar tanpa kode.</p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <button 
-                                        onClick={handleEnroll}
-                                        disabled={isSubmitting}
-                                        className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-bold text-lg hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-95"
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <Loader2 className="animate-spin" size={22} /> Memproses...
-                                            </>
-                                        ) : (
-                                            "Daftar Sekarang"
-                                        )}
-                                    </button>
-                                </div>
-                            )}
-
-                            <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-                                <p className="text-xs text-slate-400 font-bold flex items-center justify-center gap-2 bg-slate-50 py-2 rounded-lg">
-                                    <Award size={14} className="text-amber-500" /> Sertifikat Kelulusan Digital
-                                </p>
+                    {/* Thumbnail */}
+                    <div className="relative h-56 w-full bg-slate-900 overflow-hidden group">
+                        {course.thumbnail_url ? (
+                            <Image 
+                                src={course.thumbnail_url} 
+                                alt={course.title} 
+                                fill 
+                                className="object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-slate-900 opacity-80" />
+                                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20" />
+                                <PlayCircle size={56} className="text-white/30 relative z-10" />
                             </div>
+                        )}
+                        
+                        {/* Price Tag */}
+                        <div className="absolute top-4 right-4">
+                            <span className="bg-white/95 backdrop-blur-md text-slate-900 px-4 py-2 rounded-xl text-xs font-black shadow-lg">
+                                GRATIS
+                            </span>
                         </div>
                     </div>
 
+                    <div className="p-6 space-y-6">
+                        
+                        {/* --- DEBUG INFO (Only for Admin/Premium) --- */}
+                        {/* Update 2: Mempertahankan User ID & Course ID untuk Admin */}
+                        {showDebugInfo && (
+                            <div className="bg-slate-950 rounded-2xl p-5 border border-slate-800 shadow-inner relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                
+                                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-800/50">
+                                    <Terminal size={14} className="text-emerald-400" />
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">
+                                        Debug Information
+                                    </span>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    {/* Khusus Admin: Tampilkan ID User & Course */}
+                                    {user?.role === 'admin' && (
+                                        <>
+                                            <div>
+                                                <p className="text-[9px] text-slate-500 font-bold mb-1 uppercase">User ID:</p>
+                                                <div className="bg-slate-900 rounded border border-slate-800 px-2 py-1.5 text-[10px] font-mono text-slate-400 select-all cursor-text break-all">
+                                                    {user?.id}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] text-slate-500 font-bold mb-1 uppercase">Course ID:</p>
+                                                <div className="bg-slate-900 rounded border border-slate-800 px-2 py-1.5 text-[10px] font-mono text-slate-400 select-all cursor-text break-all">
+                                                    {course.id}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Access Key untuk Admin & Premium */}
+                                    {course.access_key ? (
+                                        <div>
+                                            <p className="text-[9px] text-slate-500 font-bold mb-1.5 uppercase flex items-center gap-1">
+                                                <Key size={10} /> Access Key (Copy):
+                                            </p>
+                                            <div className="bg-slate-900 rounded-lg border border-slate-800 px-3 py-2.5 text-xs font-mono text-emerald-300 select-all cursor-copy break-all shadow-sm flex items-center justify-between">
+                                                <span>{course.access_key}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-[10px] text-slate-500 italic">No access key required.</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- ENROLLMENT LOGIC --- */}
+                        {isEnrolled ? (
+                            <div className="text-center space-y-4">
+                                <div className="bg-emerald-50 text-emerald-800 px-4 py-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 border border-emerald-100">
+                                    <div className="bg-emerald-200 p-1 rounded-full">
+                                        <Check size={12} strokeWidth={4} className="text-emerald-700" />
+                                    </div>
+                                    Anda Sudah Terdaftar
+                                </div>
+                                
+                                <Link 
+                                    href={`/learning/${course.id}`} 
+                                    className="w-full py-4 rounded-2xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 hover:shadow-xl hover:shadow-slate-900/20 transition-all flex items-center justify-center gap-2 group active:scale-[0.98]"
+                                >
+                                    <PlayCircle size={18} className="group-hover:text-emerald-400 transition-colors"/>
+                                    Lanjutkan Belajar
+                                </Link>
+
+                                {enrollmentData?.progress_percentage >= 0 && (
+                                    <div className="pt-2 px-1">
+                                        <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                            <span>Progress Belajar</span>
+                                            <span className="text-indigo-600">{enrollmentData.progress_percentage}%</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                            <div 
+                                                className="bg-indigo-600 h-full rounded-full transition-all duration-1000 relative" 
+                                                style={{ width: `${enrollmentData.progress_percentage}%` }}
+                                            >
+                                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Header Access Type */}
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">
+                                        Akses Kursus
+                                    </h2>
+                                    <p className="text-xs text-slate-500 font-medium">
+                                        {course.access_key 
+                                            ? "Kursus ini bersifat privat dan membutuhkan kode."
+                                            : "Kursus ini terbuka untuk semua pengguna."}
+                                    </p>
+                                </div>
+
+                                {course.access_key ? (
+                                    <div className="space-y-2">
+                                        <div className="relative group">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                                                <Key size={18} />
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Masukkan Kode Akses..."
+                                                className="w-full h-14 pl-12 pr-4 rounded-2xl bg-slate-50 border-2 border-transparent focus:bg-white focus:border-indigo-600 focus:shadow-lg focus:shadow-indigo-500/10 transition-all font-bold text-slate-800 outline-none text-sm placeholder:text-slate-400 placeholder:font-medium"
+                                                value={accessKey}
+                                                onChange={(e) => setAccessKey(e.target.value)}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 px-2">
+                                            *Hubungi admin jika belum memiliki kode.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                                            <Unlock size={20} />
+                                        </div>
+                                        <div className="text-xs text-emerald-900 font-medium leading-relaxed">
+                                            <span className="font-bold block text-sm">Akses Terbuka</span>
+                                            Klik tombol di bawah untuk mulai.
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button 
+                                    onClick={handleEnroll}
+                                    disabled={isSubmitting}
+                                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none active:scale-[0.98]"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={18} /> Memproses...
+                                        </>
+                                    ) : (
+                                        "Daftar Sekarang"
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

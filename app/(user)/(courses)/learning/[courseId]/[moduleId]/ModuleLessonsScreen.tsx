@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, PlayCircle, Camera, FileText, Loader2, AlertCircle, Zap } from "lucide-react";
+import { 
+  ArrowLeft, PlayCircle, Camera, FileText, 
+  AlertCircle, Zap, ChevronRight, ListVideo 
+} from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
 
 type LessonType = 'video' | 'text' | 'camera_practice';
@@ -54,7 +58,7 @@ export default function ModuleLessonsScreen({
         console.error(err);
         setError(err.message || "Terjadi kesalahan.");
       } finally {
-        setIsLoading(false);
+        setTimeout(() => setIsLoading(false), 600);
       }
     };
 
@@ -65,39 +69,57 @@ export default function ModuleLessonsScreen({
 
   const getLessonIcon = (type: LessonType) => {
     switch (type) {
-      case 'video': return <PlayCircle size={20} className="text-blue-600" />;
-      case 'camera_practice': return <Camera size={20} className="text-rose-600" />;
-      default: return <FileText size={20} className="text-slate-600" />;
+      case 'video': return <PlayCircle size={20} className="text-white" />;
+      case 'camera_practice': return <Camera size={20} className="text-white" />;
+      default: return <FileText size={20} className="text-white" />;
     }
   };
 
   const getLessonTypeLabel = (type: LessonType) => {
     switch (type) {
-      case 'video': return "Video Materi";
+      case 'video': return "Video";
       case 'camera_practice': return "Praktek AI";
       case 'text': return "Bacaan";
       default: return "Materi";
     }
   };
 
+  const getLessonColorClasses = (type: LessonType) => {
+    switch (type) {
+        case 'video': return {
+            bg: "bg-blue-500",
+            border: "border-blue-100",
+            text: "text-blue-600 bg-blue-50",
+            shadow: "group-hover:shadow-blue-500/20"
+        };
+        case 'camera_practice': return {
+            bg: "bg-rose-500",
+            border: "border-rose-100",
+            text: "text-rose-600 bg-rose-50",
+            shadow: "group-hover:shadow-rose-500/20"
+        };
+        default: return {
+            bg: "bg-emerald-500",
+            border: "border-emerald-100",
+            text: "text-emerald-600 bg-emerald-50",
+            shadow: "group-hover:shadow-emerald-500/20"
+        };
+    }
+  };
+
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-600" size={40} />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (error || !moduleData) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4 text-center">
-        <AlertCircle className="text-rose-500 mb-4" size={48} />
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">Modul Tidak Ditemukan</h1>
-        <p className="text-slate-500 mb-6">{error}</p>
-        <Link 
-          href={`/learning/${courseId}`} 
-          className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-rose-500/10 border border-rose-100">
+            <AlertCircle className="text-rose-500" size={32} />
+        </div>
+        <h1 className="text-2xl font-black text-slate-800 mb-2">Modul Tidak Ditemukan</h1>
+        <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">{error || "Terjadi kesalahan saat memuat modul."}</p>
+        <Link href={`/learning/${courseId}`} className="px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all hover:-translate-y-0.5 shadow-lg shadow-slate-900/20">
           Kembali ke Daftar Modul
         </Link>
       </div>
@@ -105,81 +127,128 @@ export default function ModuleLessonsScreen({
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-20 selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-24 selection:bg-indigo-500/30 selection:text-indigo-900">
       <UserNavbar />
 
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      {/* --- HERO HEADER --- */}
+      <div className="relative bg-[#020617] overflow-hidden pt-28 pb-20 rounded-b-[2.5rem] shadow-xl shadow-slate-900/10">
+        <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse-slow pointer-events-none mix-blend-screen" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-fuchsia-600/15 rounded-full blur-[100px] animate-pulse-slow delay-1000 pointer-events-none mix-blend-screen" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.04] mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(2,6,23,0.9))]" />
+
+        {/* Updated to max-w-6xl */}
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
           <Link 
             href={`/learning/${courseId}`} 
-            className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-indigo-600 transition-colors mb-4"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all mb-6 text-[11px] font-bold uppercase tracking-widest backdrop-blur-md border border-white/10 hover:border-white/20 group"
           >
-            <ArrowLeft size={16} /> Kembali ke Modul
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" /> 
+            Kembali
           </Link>
           
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-2 tracking-tight">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex items-center gap-3 mb-4">
+                <span className="bg-indigo-500/20 text-indigo-200 px-3 py-1 rounded-lg text-[10px] font-extrabold border border-indigo-500/30 uppercase tracking-widest backdrop-blur-md shadow-lg shadow-indigo-500/10">
+                    Modul {moduleData.order_index}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10 backdrop-blur-md">
+                    <ListVideo size={14} /> {lessons.length} Pelajaran
+                </span>
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 mb-3 leading-tight tracking-tight drop-shadow-sm">
               {moduleData.title}
             </h1>
-            <p className="text-slate-500 leading-relaxed max-w-2xl font-medium">
-              {moduleData.description || "Selesaikan semua pelajaran di bawah ini."}
+            <p className="text-slate-400 text-sm md:text-base leading-relaxed max-w-3xl font-medium border-l-2 border-indigo-500/50 pl-4">
+              {moduleData.description || "Selesaikan semua pelajaran di bawah ini untuk menguasai materi modul ini dengan baik."}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* --- LESSON LIST --- */}
+      {/* Updated to max-w-6xl */}
+      <div className="max-w-6xl mx-auto px-6 mt-8 relative z-20">
+        
         <div className="flex items-center justify-between mb-6 px-1">
-          <h2 className="text-lg font-bold text-slate-800">Daftar Pelajaran</h2>
-          <span className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-wider">
-            {lessons.length} Materi
-          </span>
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 bg-white/90 backdrop-blur-xl px-4 py-2 rounded-xl shadow-sm border border-white/50">
+                <div className="w-7 h-7 bg-slate-900 rounded-lg flex items-center justify-center text-white shadow-sm">
+                    <ListVideo size={14} />
+                </div>
+                Daftar Pelajaran
+            </h2>
         </div>
 
         {lessons.length > 0 ? (
           <div className="space-y-4">
-            {lessons.map((lesson, index) => (
-              <Link 
-                key={lesson.id}
-                href={`/learning/${courseId}/${moduleId}/${lesson.id}`}
-                className="group flex flex-col md:flex-row items-start md:items-center gap-4 p-5 bg-white rounded-[1.5rem] border border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 transform active:scale-[0.99] relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                
-                <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 font-black group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-indigo-500/30 transition-all duration-300 relative z-10">
-                  {index + 1}
-                </div>
+            {lessons.map((lesson, index) => {
+              const colors = getLessonColorClasses(lesson.type);
+              
+              return (
+                <Link 
+                  key={lesson.id}
+                  href={`/learning/${courseId}/${moduleId}/${lesson.id}`}
+                  className={`group relative block bg-white rounded-[1.5rem] p-2 hover:shadow-xl ${colors.shadow} transition-all duration-300 transform hover:-translate-y-1 ring-1 ring-slate-200/60 hover:ring-transparent`}
+                >
+                  <div className="flex flex-col md:flex-row items-center gap-5 p-4 relative z-10">
+                      
+                      {/* Index & Icon */}
+                      <div className="relative flex-shrink-0">
+                          <div className={`w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center relative overflow-hidden group-hover:scale-105 transition-transform duration-300 border border-slate-100`}>
+                              <span className="text-lg font-black text-slate-300 z-10 group-hover:text-white transition-colors duration-300">
+                                {String(index + 1).padStart(2, '0')}
+                              </span>
+                              <div className={`absolute inset-0 ${colors.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                          </div>
+                          
+                          <div className={`absolute -bottom-1 -right-1 w-7 h-7 rounded-full ${colors.bg} flex items-center justify-center shadow-md border-[3px] border-white transform rotate-12 group-hover:rotate-0 transition-transform duration-300`}>
+                              {getLessonIcon(lesson.type)}
+                          </div>
+                      </div>
 
-                <div className="flex-1 relative z-10">
-                   <div className="flex items-center gap-2 mb-1.5">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border ${
-                        lesson.type === 'video' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                        lesson.type === 'camera_practice' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-                        'bg-slate-50 text-slate-600 border-slate-100'
-                      }`}>
-                        {getLessonTypeLabel(lesson.type)}
-                      </span>
-                   </div>
-                   <h3 className="text-base md:text-lg font-bold text-slate-900 group-hover:text-indigo-700 transition-colors leading-snug">
-                     {lesson.title}
-                   </h3>
-                </div>
+                      {/* Content */}
+                      <div className="flex-1 text-center md:text-left min-w-0 py-1">
+                          <div className="flex items-center justify-center md:justify-start gap-2 mb-1.5">
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide border ${colors.text} ${colors.border}`}>
+                                  {getLessonTypeLabel(lesson.type)}
+                              </span>
+                          </div>
+                          
+                          <h3 className="text-lg font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-snug line-clamp-1 mb-1">
+                              {lesson.title}
+                          </h3>
+                          <p className="text-slate-500 text-xs font-medium line-clamp-1">
+                              Pelajari topik ini untuk mendapatkan poin pengalaman.
+                          </p>
+                      </div>
 
-                <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-50 relative z-10">
-                   <div className="flex items-center gap-1.5 text-xs font-bold text-amber-500 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 shadow-sm">
-                      <Zap size={14} fill="currentColor" />
-                      {lesson.xp_reward} XP
-                   </div>
-                   <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all">
-                      {getLessonIcon(lesson.type)}
-                   </div>
-                </div>
-              </Link>
-            ))}
+                      {/* Right Side */}
+                      <div className="flex flex-col items-center md:items-end gap-2 w-full md:w-auto border-t md:border-t-0 border-slate-100 pt-3 md:pt-0 mt-1 md:mt-0">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-amber-500 bg-amber-50/80 px-3 py-1.5 rounded-lg border border-amber-100/50 shadow-sm">
+                              <Zap size={14} fill="currentColor" />
+                              {lesson.xp_reward} XP
+                          </div>
+                          
+                          <div className="hidden md:flex items-center gap-1.5 text-indigo-600 font-bold text-xs opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                              Mulai <ChevronRight size={14} />
+                          </div>
+                      </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-[2rem] border-2 border-dashed border-slate-200">
-            <p className="text-slate-400 font-medium">Belum ada materi pembelajaran.</p>
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2rem] border-2 border-dashed border-slate-200 shadow-sm relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03]" />
+            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 text-slate-300 shadow-inner">
+                <FileText size={32} />
+            </div>
+            <h3 className="text-base font-black text-slate-800 mb-1 relative z-10">Materi Belum Tersedia</h3>
+            <p className="text-slate-500 font-medium text-sm max-w-xs text-center relative z-10 px-4">
+              Instruktur sedang menyiapkan pelajaran terbaik untuk modul ini.
+            </p>
           </div>
         )}
       </div>
