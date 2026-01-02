@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { 
   Trophy, Lock, Star, Calendar, Medal, 
-  Filter, Award, Zap 
+  Filter, Zap, BarChart3
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -13,15 +13,14 @@ import UserLayout from "@/components/layouts/UserLayout";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
 
-// --- TYPES ---
-type AchievementCategory = 'learning' | 'streak' | 'community' | 'collection' | 'all';
+type AchievementCategory = 'learning' | 'streak' | 'community' | 'collection' | 'level' | 'all';
 
 interface AchievementMaster {
   id: string;
   title: string;
   description: string;
   icon_url: string | null;
-  category: string;
+  category: AchievementCategory; 
   xp_reward: number;
   target_value: number;
 }
@@ -43,25 +42,21 @@ export default function AchievementScreen() {
   const [activeCategory, setActiveCategory] = useState<AchievementCategory>('all');
   const [stats, setStats] = useState({ total: 0, unlocked: 0 });
 
-  // --- FETCH DATA ---
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Parallel Fetch: Master Data (Semua list) & User Data (Yang sudah didapat)
         const [masterRes, userRes] = await Promise.all([
-          api.get('/achievements'),           // GET /api/achievements (Public/Master)
-          api.get('/progress/achievements')   // GET /api/progress/achievements (User Owned)
+          api.get('/achievements'),
+          api.get('/progress/achievements')
         ]);
 
         const masterList: AchievementMaster[] = masterRes.success ? masterRes.data : [];
         const userList: UserAchievement[] = userRes.success ? userRes.data : [];
 
-        // Set User Owned IDs untuk lookup cepat
         const userOwnedMap = new Map(userList.map(u => [u.achievement_id, u.unlocked_at]));
 
-        // Merge Data: Gabungkan Master + Status Unlocked
         const merged: MergedAchievement[] = masterList.map(item => ({
           ...item,
           is_unlocked: userOwnedMap.has(item.id),
@@ -75,7 +70,7 @@ export default function AchievementScreen() {
         });
 
       } catch (error) {
-        console.error("Gagal memuat achievement:", error);
+        console.error(error);
       } finally {
         setTimeout(() => setIsLoading(false), 500);
       }
@@ -84,7 +79,6 @@ export default function AchievementScreen() {
     fetchData();
   }, []);
 
-  // --- FILTER LOGIC ---
   const filteredAchievements = activeCategory === 'all' 
     ? achievements 
     : achievements.filter(a => a.category === activeCategory);
@@ -93,6 +87,7 @@ export default function AchievementScreen() {
     { id: 'all', label: 'Semua', icon: Filter },
     { id: 'learning', label: 'Belajar', icon: Zap },
     { id: 'streak', label: 'Streak', icon: Calendar },
+    { id: 'level', label: 'Level', icon: BarChart3 },
     { id: 'collection', label: 'Koleksi', icon: Star },
   ];
 
@@ -102,8 +97,7 @@ export default function AchievementScreen() {
     <UserLayout>
       <div className="min-h-screen bg-[#F8FAFC] pb-20">
         
-        {/* --- HEADER --- */}
-        <div className="bg-white border-b border-slate-200 pt-8 pb-6 px-4 sm:px-6 sticky top-[70px] z-30">
+        <div className="bg-white border-b border-slate-200 pt-8 pb-6 px-4 sm:px-6 sticky top-[64px] z-30">
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -115,7 +109,6 @@ export default function AchievementScreen() {
                 </p>
               </div>
               
-              {/* Stats Card Kecil */}
               <div className="text-right">
                 <div className="text-3xl font-black text-indigo-600">
                   {stats.unlocked}<span className="text-slate-300 text-lg">/{stats.total}</span>
@@ -126,8 +119,7 @@ export default function AchievementScreen() {
               </div>
             </div>
 
-            {/* Category Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
@@ -146,7 +138,6 @@ export default function AchievementScreen() {
           </div>
         </div>
 
-        {/* --- LIST ACHIEVEMENT --- */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
           
           {filteredAchievements.length === 0 ? (
@@ -167,15 +158,13 @@ export default function AchievementScreen() {
                       : "bg-slate-50 border-slate-100 opacity-80 hover:opacity-100 grayscale hover:grayscale-0"
                     }`}
                 >
-                  {/* Background Decoration if Unlocked */}
                   {item.is_unlocked && (
                     <div className="absolute top-0 right-0 p-10 bg-indigo-50/50 rounded-bl-[4rem] -mr-4 -mt-4 transition-transform group-hover:scale-110 pointer-events-none" />
                   )}
 
                   <div className="flex items-start gap-5 relative z-10">
                     
-                    {/* ICON WRAPPER */}
-                    <div className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner
+                    <div className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center text-3xl shadow-inner overflow-hidden relative
                       ${item.is_unlocked 
                         ? "bg-gradient-to-br from-indigo-100 to-white border border-indigo-50" 
                         : "bg-slate-200 border border-slate-300 text-slate-400"
@@ -183,7 +172,13 @@ export default function AchievementScreen() {
                     >
                       {item.is_unlocked ? (
                         item.icon_url ? (
-                          <Image src={item.icon_url} alt={item.title} width={40} height={40} />
+                          <Image 
+                            src={item.icon_url} 
+                            alt={item.title} 
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
                         ) : (
                           <Medal className="text-indigo-500 drop-shadow-sm" size={32} />
                         )
@@ -192,7 +187,6 @@ export default function AchievementScreen() {
                       )}
                     </div>
 
-                    {/* CONTENT */}
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
                         <h3 className={`font-bold text-lg mb-1 ${item.is_unlocked ? 'text-slate-800' : 'text-slate-500'}`}>
@@ -205,7 +199,7 @@ export default function AchievementScreen() {
                         )}
                       </div>
                       
-                      <p className="text-sm text-slate-500 leading-relaxed mb-3">
+                      <p className="text-sm text-slate-500 leading-relaxed mb-3 line-clamp-2">
                         {item.description}
                       </p>
 

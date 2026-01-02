@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 import UserLayout from "@/components/layouts/UserLayout";
-import UserNotification from "@/components/ui/UserNotification"; // Updated Import
+import UserNotification from "@/components/ui/UserNotification"; 
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
 
@@ -129,7 +129,7 @@ export default function LessonPlayerScreen({
     }
   };
 
-  // --- HANDLE COMPLETION ---
+  // --- HANDLE COMPLETION & XP UPDATE ---
   const handleComplete = async () => {
     setIsCompleting(true);
     try {
@@ -137,6 +137,7 @@ export default function LessonPlayerScreen({
         if (!userStr) { router.push('/login'); return; }
         const user = JSON.parse(userStr);
 
+        // 1. Simpan Progress (Backend akan menambah XP)
         const res = await api.post('/progress', {
             user_id: user.id,
             course_id: courseId,
@@ -147,13 +148,29 @@ export default function LessonPlayerScreen({
         });
 
         if (res.success) {
+            // 2. Update Streak (Jika belum selesai sebelumnya)
             if (!isCompleted) {
                await handleStreakLogic(user.id);
             }
 
+            // 3. UPDATE DATA USER LOKAL (Fetch XP terbaru)
+            try {
+                const userRes = await api.get(`/users/me?user_id=${user.id}`);
+                if (userRes.success) {
+                    const updatedUser = userRes.data;
+                    // Simpan ke localStorage
+                    localStorage.setItem("user", JSON.stringify(updatedUser));
+                    
+                    // Dispatch Event agar Header/Layout update UI XP secara realtime
+                    window.dispatchEvent(new Event("user-updated"));
+                }
+            } catch (fetchErr) {
+                console.warn("Gagal refresh data user lokal:", fetchErr);
+            }
+
             setIsCompleted(true);
             
-            // Tampilkan Notifikasi (Toast)
+            // 4. Tampilkan Notifikasi
             setNotification({ 
               type: 'success', 
               message: `Materi Selesai! +${lesson?.xp_reward} XP ditambahkan.` 
