@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 import UserLayout from "@/components/layouts/UserLayout";
-import Notification from "@/components/ui/Notification";
+import UserNotification from "@/components/ui/UserNotification"; // Updated Import
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
 
@@ -216,7 +216,7 @@ export default function LessonPlayerScreen({
       <div className="min-h-screen bg-[#F8FAFC] font-sans flex flex-col">
         
         {/* NOTIFICATION TOAST */}
-        <Notification 
+        <UserNotification 
             type={notification.type} 
             message={notification.message} 
             onClose={() => setNotification({ type: null, message: "" })} 

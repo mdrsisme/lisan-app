@@ -3,14 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { 
-  ArrowLeft, Camera, User, Mail, AtSign, Save, Loader2, UploadCloud, Sparkles, Crown
+  ArrowLeft, Camera, User, Mail, AtSign, Save, UploadCloud, Sparkles, Crown
 } from "lucide-react";
 import { api } from "@/lib/api";
-import Notification from "@/components/ui/Notification";
+import UserNotification from "@/components/ui/UserNotification";
 import UserLayout from "@/components/layouts/UserLayout";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function ProfileScreen() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [notification, setNotification] = useState<{type: 'success'|'error'|null, message: string}>({
@@ -35,11 +37,14 @@ export default function ProfileScreen() {
     if (userStr) {
       const localUser = JSON.parse(userStr);
       fetchProfile(localUser.id);
+    } else {
+      setIsFetching(false);
     }
   }, []);
 
   const fetchProfile = async (id: string) => {
     try {
+      setIsFetching(true);
       const res = await api.get(`/users/${id}`);
       if (res.success && res.data) {
         setUserData({
@@ -54,6 +59,8 @@ export default function ProfileScreen() {
       }
     } catch (error) {
       console.error(error);
+    } finally {
+      setTimeout(() => setIsFetching(false), 500);
     }
   };
 
@@ -108,6 +115,16 @@ export default function ProfileScreen() {
 
   const isPremium = userData.is_premium;
 
+  if (isFetching) {
+    return (
+      <UserLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </UserLayout>
+    );
+  }
+
   return (
     <UserLayout>
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
@@ -118,7 +135,7 @@ export default function ProfileScreen() {
 
       <div className="min-h-screen font-sans pb-20 relative z-10">
         
-        <Notification 
+        <UserNotification 
           type={notification.type} 
           message={notification.message} 
           onClose={() => setNotification({ type: null, message: "" })} 
@@ -126,7 +143,7 @@ export default function ProfileScreen() {
 
         <main className="flex items-center justify-center px-4 py-12">
 
-          <div className="relative w-full max-w-[45rem]"> 
+          <div className="relative w-full max-w-2xl"> 
               <div className="relative bg-white/80 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 shadow-2xl overflow-hidden ring-1 ring-slate-950/5">
                   <div className="h-40 w-full relative bg-slate-900/5 overflow-hidden">
                       <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-indigo-500/20 to-transparent blur-3xl" />
@@ -143,9 +160,7 @@ export default function ProfileScreen() {
 
                   <div className="px-8 pb-10 relative z-10">
                       
-                      {/* Avatar Section */}
                       <div className="relative -mt-20 mb-8 flex flex-col items-center">
-                          {/* Glow behind avatar */}
                           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-indigo-500/30 blur-[50px] rounded-full pointer-events-none -z-10" />
 
                           <div 
@@ -195,7 +210,6 @@ export default function ProfileScreen() {
                                   <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Nama Lengkap</label>
                                   <div className="relative group">
                                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
-                                      {/* Input lebih tinggi (h-14) */}
                                       <input 
                                           type="text" 
                                           className="w-full h-14 pl-12 pr-4 rounded-2xl bg-slate-50/80 border-transparent focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-800 outline-none placeholder:text-slate-400 text-sm"
@@ -239,12 +253,24 @@ export default function ProfileScreen() {
                                   className="w-full py-4 rounded-2xl bg-slate-950 text-white font-bold text-[15px] shadow-xl shadow-indigo-900/20 hover:shadow-2xl hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group"
                               >
                                   <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-r from-transparent via-white/10 to-transparent rotate-45 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                                  {/* Gradient Button yang lebih kaya */}
                                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600" />
 
                                   <span className="relative flex items-center gap-2 z-10">
-                                      {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                                      Simpan Perubahan
+                                      {isLoading ? (
+                                        <div className="flex items-center gap-2">
+                                            {/* Custom Inline SVG Spinner */}
+                                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Menyimpan...</span>
+                                        </div>
+                                      ) : (
+                                        <>
+                                            <Save size={20} />
+                                            Simpan Perubahan
+                                        </>
+                                      )}
                                   </span>
                               </button>
                           </div>

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import UserLayout from "@/components/layouts/UserLayout";
+import LoadingSpinner from "@/components/ui/LoadingSpinner"; 
 
 interface LeaderboardUser {
   id: string;
@@ -59,14 +60,13 @@ export default function LeaderboardScreen() {
     }
   };
 
-  // Helper Avatar diperbesar
   const Avatar = ({ url, name, size = "md", border = "" }: { url: string | null, name: string, size?: "sm"|"md"|"lg"|"xl"|"2xl", border?: string }) => {
     const sizeClass = {
         sm: "w-10 h-10 text-xs",
-        md: "w-14 h-14 text-base", // Default list lebih besar
-        lg: "w-24 h-24 text-xl",    // Podium 2 & 3
+        md: "w-14 h-14 text-base",
+        lg: "w-24 h-24 text-xl",
         xl: "w-24 h-24 text-2xl",
-        "2xl": "w-32 h-32 text-3xl" // Podium 1
+        "2xl": "w-32 h-32 text-3xl"
     };
 
     return (
@@ -82,7 +82,6 @@ export default function LeaderboardScreen() {
     );
   };
 
-  // Helper Icon Ranking (Sticky Bar)
   const RankIcon = ({ rank }: { rank: number }) => {
     if (rank === 1) return <Crown size={24} className="fill-white text-white" />;
     if (rank === 2) return <Medal size={24} className="fill-white text-white" />;
@@ -90,7 +89,6 @@ export default function LeaderboardScreen() {
     return <span className="font-black text-lg text-white">#{rank}</span>;
   };
 
-  // Helper Style Badge (Sticky Bar)
   const getRightBadgeStyle = (rank: number) => {
     if (rank === 1) return "bg-gradient-to-br from-amber-300 to-amber-500 shadow-amber-500/50 ring-4 ring-amber-200";
     if (rank === 2) return "bg-gradient-to-br from-slate-300 to-slate-400 shadow-slate-400/50 ring-4 ring-slate-200";
@@ -111,7 +109,6 @@ export default function LeaderboardScreen() {
 
   return (
     <UserLayout>
-      {/* Background Ambience Bigger & Softer */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-indigo-500/5 rounded-full blur-[150px]" />
         <div className="absolute top-[10%] right-[-10%] w-[800px] h-[800px] bg-amber-500/5 rounded-full blur-[150px]" />
@@ -121,7 +118,6 @@ export default function LeaderboardScreen() {
       <div className="min-h-screen pb-40 pt-8">
         <main className="max-w-4xl mx-auto px-4 sm:px-6">
           
-          {/* Header Bigger */}
           <div className="text-center mb-16 animate-in fade-in slide-in-from-top-4 duration-700">
             <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter mb-3 drop-shadow-sm">
               Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600">Ranking</span>
@@ -130,15 +126,16 @@ export default function LeaderboardScreen() {
           </div>
 
           {loading ? (
-             <div className="flex justify-center py-24">
-                <div className="animate-spin w-12 h-12 border-[6px] border-indigo-100 border-t-indigo-600 rounded-full" />
+             // 2. Menggunakan Component LoadingSpinner
+             <div className="flex justify-center py-24 min-h-[400px] items-center">
+                <LoadingSpinner />
              </div>
           ) : (
             <>
-              {/* --- PODIUM SECTION (BIGGER) --- */}
+              {/* --- PODIUM SECTION --- */}
               <div className="relative flex justify-center items-end gap-4 md:gap-8 mb-16 px-2 min-h-[380px]">
                 
-                {/* Juara 2 (Kiri) */}
+                {/* Juara 2 */}
                 {users[1] ? (
                   <div className="flex flex-col items-center animate-in slide-in-from-bottom-8 duration-700 delay-100 z-10 w-1/3 max-w-[160px]">
                     <div className="relative mb-4 group transform transition-transform hover:-translate-y-2 duration-300">
@@ -152,12 +149,12 @@ export default function LeaderboardScreen() {
                         <span className="text-slate-500 text-xs font-bold bg-slate-100 px-3 py-1 rounded-full">{users[1].xp.toLocaleString()} XP</span>
                     </div>
                     <div className="w-full h-32 mt-2 bg-gradient-to-b from-slate-200 via-slate-100 to-slate-50/20 backdrop-blur-sm rounded-t-[2.5rem] border-t border-white/80 shadow-inner relative overflow-hidden">
-                         <div className="absolute top-0 inset-x-0 h-full bg-gradient-to-b from-white/40 to-transparent" />
+                          <div className="absolute top-0 inset-x-0 h-full bg-gradient-to-b from-white/40 to-transparent" />
                     </div>
                   </div>
                 ) : <EmptyPodium rank={2} heightClass="h-32" />}
 
-                {/* Juara 1 (Tengah - Terbesar) */}
+                {/* Juara 1 */}
                 {users[0] ? (
                   <div className="flex flex-col items-center animate-in slide-in-from-bottom-12 duration-700 z-20 w-1/3 max-w-[200px] -mx-4 pb-4">
                     <div className="relative mb-6 group transform transition-transform hover:-translate-y-2 duration-300">
@@ -182,7 +179,7 @@ export default function LeaderboardScreen() {
                   </div>
                 ) : <EmptyPodium rank={1} heightClass="h-44" />}
 
-                {/* Juara 3 (Kanan) */}
+                {/* Juara 3 */}
                 {users[2] ? (
                   <div className="flex flex-col items-center animate-in slide-in-from-bottom-8 duration-700 delay-200 z-10 w-1/3 max-w-[160px]">
                     <div className="relative mb-4 group transform transition-transform hover:-translate-y-2 duration-300">
@@ -196,17 +193,18 @@ export default function LeaderboardScreen() {
                         <span className="text-slate-500 text-xs font-bold bg-slate-100 px-3 py-1 rounded-full">{users[2].xp.toLocaleString()} XP</span>
                     </div>
                     <div className="w-full h-24 mt-2 bg-gradient-to-b from-orange-100 via-orange-50 to-orange-50/20 backdrop-blur-sm rounded-t-[2.5rem] border-t border-white/80 shadow-inner relative overflow-hidden">
-                         <div className="absolute top-0 inset-x-0 h-full bg-gradient-to-b from-white/40 to-transparent" />
+                          <div className="absolute top-0 inset-x-0 h-full bg-gradient-to-b from-white/40 to-transparent" />
                     </div>
                   </div>
                 ) : <EmptyPodium rank={3} heightClass="h-24" />}
               </div>
 
-              {/* --- LIST SECTION (Rank 4+) BIGGER --- */}
+              {/* --- LIST SECTION --- */}
               <div className="space-y-4 relative z-10 pb-12">
-                 {users.slice(3).map((user) => (
+                 {/* 3. FIX ERROR KEY: Tambahkan index sebagai fallback jika user.id duplikat */}
+                 {users.slice(3).map((user, index) => (
                    <div 
-                     key={user.id} 
+                     key={`${user.id}-${index}`} // Menggunakan kombinasi ID + index agar unik
                      className={`flex items-center gap-6 p-5 rounded-[1.5rem] backdrop-blur-md border transition-all duration-300 group ${
                         user.id === myId 
                         ? 'bg-indigo-50/90 border-indigo-200 shadow-xl shadow-indigo-200/40 scale-[1.02] z-20' 
@@ -235,7 +233,7 @@ export default function LeaderboardScreen() {
                       }`}>
                          <Zap size={16} className={user.id === myId ? 'text-indigo-600' : 'text-indigo-400'} />
                          <span className={`font-black text-base ${user.id === myId ? 'text-indigo-700' : 'text-slate-700'}`}>
-                            {user.xp.toLocaleString()}
+                           {user.xp.toLocaleString()}
                          </span>
                       </div>
                    </div>
@@ -252,15 +250,13 @@ export default function LeaderboardScreen() {
           )}
         </main>
 
-        {/* --- STICKY USER BAR (Big & Bold) --- */}
+        {/* --- STICKY USER BAR --- */}
         {currentUser && (
             <div className="fixed bottom-6 left-0 right-0 px-4 z-40 flex justify-center animate-in slide-in-from-bottom-10 duration-700 delay-500">
                 <div className="w-full max-w-2xl bg-[#0F172A]/95 backdrop-blur-2xl text-white rounded-[2rem] p-4 shadow-2xl shadow-slate-900/50 border border-slate-700/50 flex items-center justify-between gap-5 relative overflow-hidden group hover:scale-[1.01] transition-transform">
                     
-                    {/* Glow Effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                     
-                    {/* LEFT: IDENTITY */}
                     <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                         <div className="relative shrink-0">
                              <Avatar url={currentUser.avatar_url} name={currentUser.full_name} size="md" border="border-[3px] border-slate-500" />
@@ -273,7 +269,6 @@ export default function LeaderboardScreen() {
                         </div>
                     </div>
                     
-                    {/* RIGHT: STATS & RANK BADGE */}
                     <div className="flex items-center gap-6 relative z-10 shrink-0">
                         <div className="text-right hidden sm:block">
                              <div className="flex items-center justify-end gap-2">
@@ -283,7 +278,6 @@ export default function LeaderboardScreen() {
                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total XP</span>
                         </div>
 
-                        {/* RANK BADGE RIGHT */}
                         <div className={`relative flex items-center justify-center w-16 h-16 rounded-[1.2rem] shrink-0 border-2 shadow-2xl transform rotate-3 ${getRightBadgeStyle(currentUser.rank)}`}>
                              <RankIcon rank={currentUser.rank} />
                         </div>

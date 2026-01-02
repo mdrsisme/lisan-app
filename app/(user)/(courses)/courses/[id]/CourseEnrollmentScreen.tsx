@@ -9,7 +9,7 @@ import {
   Check, Key, Loader2, Lock, AlertCircle, Unlock, Terminal, Sparkles
 } from "lucide-react";
 import UserNavbar from "@/components/ui/UserNavbar";
-import Notification from "@/components/ui/Notification";
+import UserNotification from "@/components/ui/UserNotification";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
 
@@ -124,7 +124,6 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
     }
   };
 
-  // Logic: Tampilkan info debug jika admin ATAU user premium
   const showDebugInfo = user?.role === 'admin' || user?.is_premium;
 
   if (isLoading) {
@@ -155,14 +154,13 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
     <div className="min-h-screen bg-[#F8FAFC] font-sans pb-32">
       <UserNavbar />
       
-      <Notification 
+      <UserNotification 
         type={notification.type} 
         message={notification.message} 
         onClose={() => setNotification({ type: null, message: "" })} 
       />
 
       {/* --- HERO HEADER --- */}
-      {/* Update 1: pt-28 diubah jadi pt-24 agar jarak ke tombol kembali lebih pas */}
       <div className="bg-[#020617] pt-24 pb-32 relative overflow-hidden">
         {/* Background Effects */}
         <div className="absolute top-0 right-[-10%] w-[800px] h-[800px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-pulse-slow" />
@@ -279,7 +277,6 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
                     <div className="p-6 space-y-6">
                         
                         {/* --- DEBUG INFO (Only for Admin/Premium) --- */}
-                        {/* Update 2: Mempertahankan User ID & Course ID untuk Admin */}
                         {showDebugInfo && (
                             <div className="bg-slate-950 rounded-2xl p-5 border border-slate-800 shadow-inner relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />

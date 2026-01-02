@@ -21,7 +21,8 @@ import {
   Crown,
   Key,
   Trophy,
-  Medal // [BARU] Import icon Medal untuk Achievement
+  Medal,
+  Languages // [BARU] Icon untuk Live Translation
 } from "lucide-react";
 
 export default function UserNavbar() {
@@ -70,10 +71,12 @@ export default function UserNavbar() {
   const isAdmin = userData.role === "admin";
   const isPremium = userData.is_premium === true; 
 
+  // [UPDATE] Navigasi Utama: Menambahkan Live Translation
   const navLinks = [
     { href: "/dashboard", label: "Beranda", icon: LayoutGrid },
     { href: "/my-course", label: "Kursus Saya", icon: BookOpen },
     { href: "/explore", label: "Jelajahi", icon: Compass },
+    { href: "/live-translation", label: "Live Translation", icon: Languages }, // [BARU]
   ];
 
   const UserAvatar = ({ className, size = "sm" }: { className?: string, size?: "sm" | "lg" }) => {
@@ -125,6 +128,8 @@ export default function UserNavbar() {
                   LISAN
                 </span>
               </Link>
+              
+              {/* Main Navigation Links (Desktop) */}
               <div className="hidden md:flex items-center p-1 gap-1">
                 {navLinks.map((link) => {
                   const isActive = pathname === link.href;
@@ -148,23 +153,7 @@ export default function UserNavbar() {
 
             <div className="flex items-center gap-3 sm:gap-4">
               
-              {/* --- [BARU] MENU ACHIEVEMENTS --- */}
-              <Link 
-                href="/achievements"
-                className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold transition-all duration-300 group
-                  ${pathname === '/achievements' 
-                    ? "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200" 
-                    : "text-slate-500 hover:bg-slate-50 hover:text-indigo-600"
-                  }`}
-                title="Pencapaian Saya"
-              >
-                <div className={`p-1 rounded-full ${pathname === '/achievements' ? "bg-indigo-100" : "bg-slate-100 group-hover:bg-indigo-100"} transition-colors`}>
-                  <Medal size={16} className={`fill-current ${pathname === '/achievements' ? "text-indigo-500" : "text-slate-400 group-hover:text-indigo-500"}`} />
-                </div>
-                <span className={pathname === '/achievements' ? "text-indigo-700" : ""}>Achievements</span>
-              </Link>
-
-              {/* MENU LEADERBOARD */}
+              {/* MENU LEADERBOARD (Desktop Only Icon) */}
               <Link 
                 href="/leaderboard"
                 className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold transition-all duration-300 group
@@ -182,6 +171,7 @@ export default function UserNavbar() {
 
               <div className="hidden md:block h-6 w-px bg-slate-200 mx-1"></div>
 
+              {/* PROFILE DROPDOWN */}
               <div className="relative" ref={profileRef}>
                 <button 
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -200,6 +190,7 @@ export default function UserNavbar() {
                 {isProfileOpen && (
                   <div className="absolute top-full right-0 mt-3 w-72 bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-100 p-3 z-50 animate-in slide-in-from-top-2 fade-in duration-200 ring-1 ring-slate-100">
                     
+                    {/* User Info Header */}
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50 to-white p-4 mb-2 border border-indigo-50">
                         <div className="flex items-center gap-3 relative z-10">
                             <UserAvatar className="w-12 h-12 shadow-md" size="lg" />
@@ -223,15 +214,24 @@ export default function UserNavbar() {
                         <User size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> Profil Saya
                       </Link>
                       
-                      {/* [BARU] Mobile/Small Desktop Menu untuk Achievements & Leaderboard */}
                       <Link 
-                        href="/achievements" 
-                        className="lg:hidden flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all group"
+                        href="/settings" 
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all group"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        <Medal size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> Achievements
+                        <Settings size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> Pengaturan
                       </Link>
 
+                      {/* [BARU] Achievements moved here */}
+                      <Link 
+                        href="/achievements" 
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all group"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <Medal size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> Pencapaian
+                      </Link>
+
+                      {/* Mobile Links */}
                       <Link 
                         href="/leaderboard" 
                         className="md:hidden flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-amber-600 transition-all group"
@@ -240,12 +240,13 @@ export default function UserNavbar() {
                         <Trophy size={18} className="text-slate-400 group-hover:text-amber-500 transition-colors" /> Leaderboard
                       </Link>
 
+                      {/* Mobile Link: Live Translation (If needed on small screens inside dropdown) */}
                       <Link 
-                        href="/settings" 
-                        className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all group"
+                        href="/live-translation" 
+                        className="md:hidden flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all group"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        <Settings size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> Pengaturan
+                        <Languages size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> Live Translation
                       </Link>
 
                       <Link 
@@ -288,6 +289,7 @@ export default function UserNavbar() {
         </div>
       </nav>
 
+      {/* MODE SWITCH MODAL (Tetap sama) */}
       {isModeModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-visible relative animate-in zoom-in-95 duration-300 ring-1 ring-white/20">

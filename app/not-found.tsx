@@ -2,71 +2,100 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Home, FileQuestion } from "lucide-react";
-import { themeColors } from "@/lib/color";
+import { ArrowLeft, Home, Compass } from "lucide-react";
 
 export default function NotFound() {
   const router = useRouter();
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#F8FAFC] overflow-hidden px-6 text-center font-sans selection:bg-slate-200">
-    
-      <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className={`absolute -top-32 -left-32 w-96 h-96 rounded-full blur-[100px] opacity-40 animate-pulse ${themeColors.cosmic.gradient}`} />
-        <div className={`absolute -top-20 -right-20 w-[500px] h-[500px] rounded-full blur-[120px] opacity-40 ${themeColors.ocean.gradient}`} />
-        <div className={`absolute top-1/2 -left-40 w-80 h-80 rounded-full blur-[90px] opacity-30 ${themeColors.solar.gradient}`} />
-        <div className={`absolute -bottom-32 -right-32 w-[600px] h-[600px] rounded-full blur-[130px] opacity-30 animate-pulse ${themeColors.midnight.gradient}`} />
-        <div className={`absolute bottom-0 left-20 w-72 h-72 rounded-full blur-[80px] opacity-30 ${themeColors.aurora.gradient}`} />
-        <div className={`absolute top-1/3 right-0 w-64 h-64 rounded-full blur-[100px] opacity-30 ${themeColors.sunset.gradient}`} />
-        <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px]" />
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-slate-50 overflow-hidden px-4 font-sans text-slate-800">
+      
+      {/* --- RAINBOW ORB BACKGROUND --- */}
+      <div className="fixed inset-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+        
+        {/* CSS Animation untuk gerakan fluid */}
+        <style jsx>{`
+          @keyframes float {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+          }
+          .animate-blob {
+            animation: float 10s infinite cubic-bezier(0.4, 0, 0.2, 1);
+          }
+        `}</style>
+
+        {/* Orb 1: Purple */}
+        <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-purple-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-70 animate-blob" style={{ animationDelay: "0s" }} />
+        {/* Orb 2: Cyan */}
+        <div className="absolute top-[10%] right-[20%] w-[500px] h-[500px] bg-cyan-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-70 animate-blob" style={{ animationDelay: "2s" }} />
+        {/* Orb 3: Yellow */}
+        <div className="absolute bottom-[10%] left-[30%] w-[500px] h-[500px] bg-yellow-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-70 animate-blob" style={{ animationDelay: "4s" }} />
+        {/* Orb 4: Pink */}
+        <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] bg-pink-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-70 animate-blob" style={{ animationDelay: "6s" }} />
+        
+        {/* Noise Texture Overlay (Agar lebih estetik & tidak flat) */}
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.04] mix-blend-overlay" />
       </div>
-      <div className="relative z-10 w-full max-w-3xl">
-        <div className="bg-white/60 backdrop-blur-xl border border-white/50 rounded-[3rem] p-10 md:p-16 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] animate-in zoom-in-95 duration-500">
-          <div className="flex justify-center mb-8">
-            <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-tr from-violet-200 to-orange-200 rounded-3xl blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
-                <div className="relative w-24 h-24 rounded-3xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
-                    <FileQuestion size={48} className="text-slate-400 group-hover:text-slate-600 transition-colors duration-300" strokeWidth={1.5} />
-                </div>
+
+      {/* --- MAIN CARD (COMPACT GLASS) --- */}
+      <div className="relative z-10 w-full max-w-[26rem] animate-in zoom-in-95 fade-in duration-700">
+        
+        <div className="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[2.5rem] p-8 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] ring-1 ring-white/80 text-center">
+          
+          {/* Floating Icon Container */}
+          <div className="flex justify-center mb-6">
+            <div className="relative w-20 h-20 bg-white/50 rounded-3xl border border-white shadow-lg flex items-center justify-center animate-bounce [animation-duration:3s]">
+               <Compass size={40} className="text-slate-700/80" strokeWidth={1.5} />
             </div>
           </div>
-          <h1 className="text-[100px] md:text-[150px] font-black leading-none tracking-tighter bg-gradient-to-r from-violet-500 via-fuchsia-500 via-orange-500 to-teal-500 bg-clip-text text-transparent select-none drop-shadow-sm mb-2">
-            404
-          </h1>
 
-          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-6 tracking-tight">
-            Halaman Tidak Ditemukan
-          </h2>
+          {/* Typography */}
+          <div className="mb-8 space-y-1">
+            <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 tracking-tighter drop-shadow-sm select-none">
+              404
+            </h1>
+            <h2 className="text-lg font-bold text-slate-800">
+              Tersesat di Angkasa?
+            </h2>
+            <p className="text-xs font-medium text-slate-500 leading-relaxed max-w-[240px] mx-auto pt-2">
+              Halaman yang Anda cari mungkin telah berpindah dimensi atau tidak pernah ada.
+            </p>
+          </div>
 
-          <p className="text-slate-500 text-lg md:text-xl font-medium mb-10 max-w-lg mx-auto leading-relaxed">
-            Maaf, kami telah mencari ke seluruh penjuru semesta LISAN, namun halaman yang Anda tuju tidak ada di sini.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/"
+              className="w-full h-12 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 hover:shadow-xl hover:shadow-purple-500/20 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 group"
+            >
+              <Home size={16} />
+              Kembali ke Beranda
+            </Link>
 
             <button
               onClick={() => router.back()}
-              className="w-full sm:w-auto h-14 px-8 rounded-2xl border border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 transition-all duration-300 flex items-center justify-center gap-2 group shadow-sm hover:shadow-md"
+              className="w-full h-12 rounded-2xl bg-white/50 border border-white text-slate-600 text-sm font-bold hover:bg-white hover:text-slate-900 transition-all duration-300 flex items-center justify-center gap-2"
             >
-              <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft size={16} />
               Kembali
             </button>
-
-            <Link
-              href="/"
-              className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-slate-900 text-white font-bold hover:bg-slate-800 hover:shadow-lg hover:shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              <Home size={20} />
-              Ke Beranda
-            </Link>
-
           </div>
+
         </div>
+
+        {/* Shadow Grounding */}
+        <div className="mt-8 flex justify-center">
+           <div className="h-3 w-40 bg-slate-900/5 rounded-[100%] blur-lg" />
+        </div>
+
       </div>
 
-      <div className="absolute bottom-8 text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
-        LISAN Ecosystem • Error 404
+      <div className="absolute bottom-8 text-slate-500/50 text-[10px] font-bold uppercase tracking-[0.3em] mix-blend-overlay">
+        LISAN Ecosystem
       </div>
+
     </div>
   );
 }

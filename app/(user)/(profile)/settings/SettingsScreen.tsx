@@ -4,15 +4,17 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
-  ArrowLeft, Trash2, AlertTriangle, Loader2, KeyRound, Save, Lock, AlertCircle
+  ArrowLeft, Trash2, AlertTriangle, KeyRound, Save, Lock, AlertCircle, Loader2
 } from "lucide-react";
 import { api } from "@/lib/api";
-import Notification from "@/components/ui/Notification";
+import UserNotification from "@/components/ui/UserNotification";
 import UserLayout from "@/components/layouts/UserLayout";
+// LoadingSpinner tidak di-import di sini karena kita pakai Loader2 untuk tombol
+// Jika ingin loading satu halaman penuh, baru import LoadingSpinner.
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Untuk loading tombol
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   
@@ -72,16 +74,13 @@ export default function SettingsScreen() {
 
   return (
     <UserLayout>
-      {notification.type && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4 animate-in slide-in-from-top-5 fade-in duration-300">
-           <Notification 
-             type={notification.type} 
-             message={notification.message} 
-             onClose={() => setNotification({ type: null, message: "" })} 
-           />
-        </div>
-      )}
+      <UserNotification 
+        type={notification.type} 
+        message={notification.message} 
+        onClose={() => setNotification({ type: null, message: "" })} 
+      />
 
+      {/* Background Animated */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
           <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-rose-400 via-fuchsia-400 to-indigo-400 blur-[100px] opacity-20 animate-pulse-slow" />
           <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-blue-400 via-cyan-400 to-teal-400 blur-[100px] opacity-20 animate-pulse-slow animation-delay-2000" />
@@ -95,6 +94,7 @@ export default function SettingsScreen() {
               
               <div className="relative bg-white/80 backdrop-blur-2xl rounded-[2.5rem] border border-white/60 shadow-2xl overflow-hidden ring-1 ring-slate-200/50">
 
+                  {/* Header Card */}
                   <div className="h-48 w-full relative bg-slate-950 overflow-hidden flex items-end p-8">
                       <div className="absolute top-[-50%] right-[-10%] w-[400px] h-[400px] bg-gradient-to-bl from-indigo-600 to-violet-600 rounded-full blur-[60px] opacity-60" />
                       <div className="absolute bottom-[-20%] left-[-10%] w-[300px] h-[300px] bg-gradient-to-tr from-fuchsia-600 to-rose-600 rounded-full blur-[60px] opacity-50" />
@@ -118,6 +118,7 @@ export default function SettingsScreen() {
 
                   <div className="p-8 space-y-8">
 
+                      {/* Ganti Password Section */}
                       <div className="flex flex-col gap-6">
                           <div>
                               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -155,7 +156,7 @@ export default function SettingsScreen() {
                                           value={passwords.newPassword}
                                           onChange={(e) => {
                                               setPasswords({ newPassword: e.target.value });
-                                              if (e.target.value) setPasswordError(""); // Hapus error saat ketik
+                                              if (e.target.value) setPasswordError(""); 
                                           }}
                                       />
                                   </div>
@@ -166,8 +167,18 @@ export default function SettingsScreen() {
                                           disabled={isLoading}
                                           className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold text-xs shadow-lg shadow-slate-300 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-70 disabled:transform-none flex items-center gap-2 group"
                                       >
-                                          {isLoading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} className="group-hover:scale-110 transition-transform" />}
-                                          Update Password
+                                          {isLoading ? (
+                                              <div className="flex items-center gap-2">
+                                                  {/* Pakai Loader2 karena ini di dalam tombol */}
+                                                  <Loader2 className="animate-spin w-4 h-4" />
+                                                  <span>Menyimpan...</span>
+                                              </div>
+                                          ) : (
+                                              <>
+                                                  <Save size={16} className="group-hover:scale-110 transition-transform" />
+                                                  Update Password
+                                              </>
+                                          )}
                                       </button>
                                   </div>
                               </form>
@@ -176,6 +187,7 @@ export default function SettingsScreen() {
 
                       <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent w-full" />
 
+                      {/* Hapus Akun Section */}
                       <div className="rounded-[1.8rem] border border-rose-100 bg-gradient-to-br from-white to-rose-50/30 p-6 relative overflow-hidden group">
                           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-rose-500/10 transition-colors duration-700" />
                           
@@ -206,6 +218,7 @@ export default function SettingsScreen() {
         </main>
       </div>
 
+      {/* MODAL HAPUS AKUN */}
       {isDeleteOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300" onClick={() => setIsDeleteOpen(false)} />
@@ -229,7 +242,10 @@ export default function SettingsScreen() {
                    disabled={isLoading}
                    className="w-full py-3.5 rounded-2xl bg-rose-600 text-white font-bold text-sm shadow-xl shadow-rose-500/30 hover:bg-rose-700 hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
                  >
-                   {isLoading ? <Loader2 className="animate-spin" size={20} /> : (
+                   {isLoading ? (
+                      // Pakai Loader2 untuk spinner kecil di tombol
+                      <Loader2 className="animate-spin w-5 h-5" />
+                   ) : (
                      <>
                         <Trash2 size={18} className="group-hover:animate-bounce" /> Ya, Hapus Sekarang
                      </>

@@ -13,13 +13,9 @@ interface DashboardStreakProps {
 export default function DashboardStreak({ user }: DashboardStreakProps) {
   const [streakData, setStreakData] = useState<UserStreak | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Helper untuk format hari (Sen, Sel, dst)
   const today = new Date();
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
-    // Mengatur agar array dimulai dari 6 hari lalu sampai hari ini (atau set minggu ini)
-    // Disini saya buat: Hari ini di posisi terakhir (index 6) agar terlihat progres ke belakang
     d.setDate(today.getDate() - (6 - i)); 
     return d;
   });
@@ -43,8 +39,6 @@ export default function DashboardStreak({ user }: DashboardStreakProps) {
     fetchStreak();
   }, [user?.id]);
 
-  // Logika Cek apakah hari ini sudah aktivitas
-  // Backend hanya kirim `last_activity_at`. Kita cek apakah tanggalnya sama dengan hari di kalender.
   const isDateActive = (dateToCheck: Date) => {
     if (!streakData?.last_activity_at) return false;
     const lastActive = new Date(streakData.last_activity_at);
@@ -66,15 +60,10 @@ export default function DashboardStreak({ user }: DashboardStreakProps) {
   return (
     <section>
       <div className="w-full bg-white rounded-[1.5rem] border border-slate-100 p-5 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-        {/* Dekorasi Background */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl -z-10" />
-
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          
-          {/* KIRI: Info Text & Counter */}
           <div className="flex items-center gap-4 w-full md:w-auto">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center text-orange-500 shrink-0 shadow-sm border border-orange-100 relative overflow-hidden">
-               {/* Efek Api Animasi */}
                <div className="absolute inset-0 bg-white/20 animate-pulse rounded-full blur-md"></div>
                <Flame size={28} className="fill-orange-500 relative z-10 animate-bounce [animation-duration:3s]" />
             </div>
@@ -92,11 +81,10 @@ export default function DashboardStreak({ user }: DashboardStreakProps) {
             </div>
           </div>
 
-          {/* TENGAH: Kalender Mini (Mingguan) */}
           <div className="flex items-center justify-between gap-2 w-full md:w-auto bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100">
             {weekDays.map((date, index) => {
               const isToday = date.toDateString() === today.toDateString();
-              const isActive = isDateActive(date); // Cek dari data backend
+              const isActive = isDateActive(date); 
               const dayName = new Intl.DateTimeFormat('id-ID', { weekday: 'narrow' }).format(date);
 
               return (
@@ -106,7 +94,7 @@ export default function DashboardStreak({ user }: DashboardStreakProps) {
                     ${isActive 
                       ? 'bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-500/20' 
                       : isToday
-                        ? 'bg-white border-indigo-500 text-indigo-600 ring-2 ring-indigo-100' // Hari ini tapi belum ngerjain
+                        ? 'bg-white border-indigo-500 text-indigo-600 ring-2 ring-indigo-100'
                         : 'bg-white border-slate-200 text-slate-300'
                     }
                   `}>
@@ -119,8 +107,6 @@ export default function DashboardStreak({ user }: DashboardStreakProps) {
               );
             })}
           </div>
-
-          {/* KANAN: Tombol Lihat Aktivitas */}
           <div className="w-full md:w-auto flex md:block justify-end">
              <Link 
                 href="/streak" 
