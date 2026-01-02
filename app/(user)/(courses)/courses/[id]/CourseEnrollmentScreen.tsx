@@ -265,13 +265,6 @@ export default function CourseEnrollmentScreen({ id }: { id: string }) {
                                 <PlayCircle size={56} className="text-white/30 relative z-10" />
                             </div>
                         )}
-                        
-                        {/* Price Tag */}
-                        <div className="absolute top-4 right-4">
-                            <span className="bg-white/95 backdrop-blur-md text-slate-900 px-4 py-2 rounded-xl text-xs font-black shadow-lg">
-                                GRATIS
-                            </span>
-                        </div>
                     </div>
 
                     <div className="p-6 space-y-6">
