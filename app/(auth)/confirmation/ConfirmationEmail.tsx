@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -25,9 +27,12 @@ export default function ConfirmationForm() {
   const [timeLeft, setTimeLeft] = useState(120);
   const [inputError, setInputError] = useState("");
 
-  const [notification, setNotification] = useState<{ type: "success" | "error" | null, message: string }>({
+  const [notification, setNotification] = useState<{
+    type: "success" | "error" | null;
+    message: string;
+  }>({
     type: null,
-    message: ""
+    message: "",
   });
 
   useEffect(() => {
@@ -49,37 +54,36 @@ export default function ConfirmationForm() {
     setInputError("");
 
     if (!emailParam) {
-        setNotification({ type: "error", message: "Parameter email hilang. Silakan daftar ulang." });
-        return;
+      setNotification({ type: "error", message: "Parameter email hilang. Silakan daftar ulang." });
+      return;
     }
 
     if (!code.trim()) {
-        setInputError("Kode verifikasi wajib diisi");
-        return;
+      setInputError("Kode verifikasi wajib diisi");
+      return;
     }
 
     if (code.length < 6) {
-        setInputError("Kode harus 6 digit");
-        return;
+      setInputError("Kode harus 6 digit");
+      return;
     }
 
     setIsLoading(true);
-    
+
     try {
-      const payload: VerifyRequest = { 
-        email: emailParam, 
-        code: code 
+      const payload: VerifyRequest = {
+        email: emailParam,
+        code: code,
       };
 
       await api.post("/auth/verify", payload);
-      
-      setNotification({ 
-        type: "success", 
-        message: "Verifikasi Berhasil! Akun Anda kini aktif di Leaderboard." 
-      });
-      
-      setTimeout(() => router.push("/login"), 2000);
 
+      setNotification({
+        type: "success",
+        message: "Verifikasi Berhasil! Akun Anda kini aktif di Leaderboard.",
+      });
+
+      setTimeout(() => router.push("/login"), 2000);
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || "Kode verifikasi salah atau kedaluwarsa.";
       setNotification({ type: "error", message: errorMsg });
@@ -91,15 +95,14 @@ export default function ConfirmationForm() {
 
   const handleResend = async () => {
     if (timeLeft > 0 || !emailParam) return;
-    
+
     setIsLoading(true);
     try {
       const payload: ResendOtpRequest = { email: emailParam };
       await api.post("/auth/send-otp", payload);
-      
       setNotification({ type: "success", message: "Kode baru telah dikirim ke email." });
-      setTimeLeft(120); 
-    } catch (err) {
+      setTimeLeft(120);
+    } catch {
       setNotification({ type: "error", message: "Gagal mengirim ulang kode." });
     } finally {
       setIsLoading(false);
@@ -107,19 +110,16 @@ export default function ConfirmationForm() {
   };
 
   return (
-    // Update Layout: Center Everything
     <div className="min-h-screen w-full flex items-center justify-center bg-white px-4 relative overflow-hidden font-sans selection:bg-emerald-100 selection:text-emerald-900">
-      
-      {/* Background Blobs (Agar senada dengan page lain) */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] left-[-5%] w-96 h-96 bg-emerald-100/40 rounded-full blur-[100px]" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-80 h-80 bg-teal-100/40 rounded-full blur-[80px]" />
+        <div className="absolute top-[-10%] left-[-5%] w-96 h-96 bg-emerald-100/40 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-80 h-80 bg-teal-100/40 rounded-full blur-[80px]" />
       </div>
 
-      <Notification 
-        type={notification.type} 
-        message={notification.message} 
-        onClose={() => setNotification({ type: null, message: "" })} 
+      <Notification
+        type={notification.type}
+        message={notification.message}
+        onClose={() => setNotification({ type: null, message: "" })}
       />
 
       <div className="max-w-md w-full animate-fade-in-up relative z-10">
@@ -127,17 +127,16 @@ export default function ConfirmationForm() {
           <div className="w-20 h-20 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shadow-lg shadow-emerald-500/10 relative z-10">
             <CheckCircle2 size={40} className="text-emerald-500" />
           </div>
-          
           <div className="absolute -right-4 -top-2 animate-bounce delay-700">
-             <Trophy size={24} className="text-amber-400 fill-amber-400 drop-shadow-sm" />
+            <Trophy size={24} className="text-amber-400 fill-amber-400 drop-shadow-sm" />
           </div>
         </div>
-        
+
         <h1 className="text-3xl font-extrabold text-slate-900 mb-3 text-center tracking-tight">
           Cek Email Kamu
         </h1>
         <p className="text-slate-500 mb-10 text-center leading-relaxed">
-          Kami telah mengirimkan kode akses ke <br/>
+          Kami telah mengirimkan kode akses ke <br />
           <span className="font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-lg mt-1 inline-block border border-slate-200">
             {emailParam || "email kamu"}
           </span>
@@ -146,33 +145,37 @@ export default function ConfirmationForm() {
         <form onSubmit={handleVerify} className="space-y-6">
           <div className="group">
             <div className="flex justify-center items-center gap-2 mb-3">
-                 <label className={`text-xs font-bold uppercase tracking-widest transition-colors ${inputError ? 'text-red-500' : 'text-slate-500'}`}>
-                    Masukkan Kode 6 Digit
-                 </label>
+              <label
+                className={`text-xs font-bold uppercase tracking-widest transition-colors ${
+                  inputError ? "text-red-500" : "text-slate-500"
+                }`}
+              >
+                Masukkan Kode 6 Digit
+              </label>
             </div>
-            
+
             <input
               type="text"
               maxLength={6}
               className={`w-full h-16 text-center text-3xl tracking-[0.5em] font-bold rounded-2xl border backdrop-blur-sm outline-none transition-all duration-300 ${
-                  inputError 
-                  ? 'border-red-500 bg-red-50 text-red-900 placeholder:text-red-300 focus:ring-4 focus:ring-red-200' 
-                  : 'border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-300 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500'
+                inputError
+                  ? "border-red-500 bg-red-50 text-red-900 placeholder:text-red-300 focus:ring-4 focus:ring-red-200"
+                  : "border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-300 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500"
               }`}
               placeholder="000000"
               value={code}
               onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setCode(val);
-                  if(val) setInputError("");
+                const val = e.target.value.replace(/[^0-9]/g, "");
+                setCode(val);
+                if (val) setInputError("");
               }}
             />
-            
+
             {inputError && (
-                <div className="flex items-center justify-center gap-1.5 mt-2 animate-in fade-in slide-in-from-top-1">
-                    <AlertCircle size={14} className="text-red-500" />
-                    <span className="text-xs font-bold text-red-500">{inputError}</span>
-                </div>
+              <div className="flex items-center justify-center gap-1.5 mt-2 animate-in fade-in slide-in-from-top-1">
+                <AlertCircle size={14} className="text-red-500" />
+                <span className="text-xs font-bold text-red-500">{inputError}</span>
+              </div>
             )}
           </div>
 
@@ -187,12 +190,12 @@ export default function ConfirmationForm() {
 
         <div className="text-center mt-8">
           <p className="text-sm text-slate-500 mb-3 font-medium">Belum menerima kode?</p>
-          <button 
+          <button
             onClick={handleResend}
             disabled={timeLeft > 0 || isLoading}
             className={`inline-flex items-center gap-2 text-sm font-bold transition-all duration-300 ${
-              timeLeft > 0 
-                ? "text-slate-400 cursor-not-allowed" 
+              timeLeft > 0
+                ? "text-slate-400 cursor-not-allowed"
                 : "text-emerald-600 hover:text-teal-700 hover:underline decoration-2 underline-offset-4"
             }`}
           >
