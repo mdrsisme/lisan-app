@@ -138,7 +138,8 @@ export default function CreateUserScreen() {
           ]}
         />
 
-        <Link href="/admin/users/create/verify" className="block group">
+        {/* Updated Route Link: /admin/users/verify */}
+        <Link href="/admin/users/verify" className="block group">
           <div className={`relative overflow-hidden rounded-2xl ${oceanGradient} p-[2px] shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-300`}>
             <div className="bg-white/95 backdrop-blur-md rounded-xl p-4 flex items-center justify-between group-hover:bg-white/90 transition-all">
                 <div className="flex items-center gap-4">
@@ -183,10 +184,10 @@ export default function CreateUserScreen() {
                   )}
                 </div>
                 <div className="relative">
-                   <div className={`absolute left-5 top-1/2 -translate-y-1/2 transition-colors ${errors.full_name ? 'text-red-400' : 'text-slate-400'} ${oceanFocus}`}>
+                    <div className={`absolute left-5 top-1/2 -translate-y-1/2 transition-colors ${errors.full_name ? 'text-red-400' : 'text-slate-400'} ${oceanFocus}`}>
                       <User size={18} />
-                   </div>
-                   <input 
+                    </div>
+                    <input 
                       type="text" 
                       placeholder="Contoh: Budi Santoso"
                       className={`w-full h-12 pl-12 pr-4 rounded-2xl bg-slate-50/50 border outline-none font-bold text-sm text-slate-700 placeholder:text-slate-400 transition-all duration-300 focus:bg-white focus:ring-[3px] focus:shadow-lg focus:shadow-cyan-100/50 ${errors.full_name ? 'border-red-500 focus:ring-red-100' : `border-slate-200 ${oceanFocus}`}`}
@@ -247,13 +248,13 @@ export default function CreateUserScreen() {
             <div className="space-y-5 border-b border-slate-50 pb-6">
                <div className="flex items-center justify-between px-1">
                   <div className="flex items-center gap-3">
-                     <div className={`w-10 h-10 rounded-xl ${oceanBgLight} ${oceanText} flex items-center justify-center ring-4 ring-white shadow-sm`}>
-                        <Lock size={18} />
-                     </div>
-                     <div>
-                        <h3 className="font-bold text-slate-800 text-sm">Keamanan</h3>
-                        <p className="text-[10px] text-slate-400">Password akun</p>
-                     </div>
+                      <div className={`w-10 h-10 rounded-xl ${oceanBgLight} ${oceanText} flex items-center justify-center ring-4 ring-white shadow-sm`}>
+                         <Lock size={18} />
+                      </div>
+                      <div>
+                         <h3 className="font-bold text-slate-800 text-sm">Keamanan</h3>
+                         <p className="text-[10px] text-slate-400">Password akun</p>
+                      </div>
                   </div>
                   <button type="button" onClick={generatePassword} className={`text-[10px] font-bold ${oceanText} bg-cyan-50 px-3 py-1.5 rounded-lg hover:bg-cyan-100 transition-all flex items-center gap-1.5`}>
                     <RefreshCw size={12} /> Auto Generate

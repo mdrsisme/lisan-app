@@ -5,7 +5,7 @@ import Link from "next/link";
 import { 
   ArrowLeft, Camera, User, Mail, AtSign, Save, UploadCloud, Sparkles, Crown
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api } from "@/lib/api"; // Pastikan path helper API benar
 import UserNotification from "@/components/ui/UserNotification";
 import UserLayout from "@/components/layouts/UserLayout";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -33,9 +33,11 @@ export default function ProfileScreen() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
+    // Ambil data awal dari localStorage (cache) lalu refresh dari API
     const userStr = localStorage.getItem("user");
     if (userStr) {
       const localUser = JSON.parse(userStr);
+      setUserData(prev => ({...prev, ...localUser})); // Isi state awal
       fetchProfile(localUser.id);
     } else {
       setIsFetching(false);
@@ -45,7 +47,8 @@ export default function ProfileScreen() {
   const fetchProfile = async (id: string) => {
     try {
       setIsFetching(true);
-      const res = await api.get(`/users/${id}`);
+      // Gunakan endpoint /users/:id atau /users/me tergantung backend
+      const res = await api.get(`/users/${id}`); 
       if (res.success && res.data) {
         setUserData({
           id: res.data.id,
@@ -56,6 +59,8 @@ export default function ProfileScreen() {
           avatar_url: res.data.avatar_url || "",
           is_premium: res.data.is_premium || false
         });
+        // Update localStorage agar sinkron
+        localStorage.setItem("user", JSON.stringify(res.data));
       }
     } catch (error) {
       console.error(error);
@@ -79,20 +84,24 @@ export default function ProfileScreen() {
 
     try {
       const formData = new FormData();
-      formData.append("user_id", userData.id);
+      // Backend biasanya butuh field ini jika pakai multer
       formData.append("full_name", userData.full_name);
       formData.append("username", userData.username);
-      formData.append("email", userData.email);
+      // Email biasanya tidak diupdate di profile edit biasa, tapi jika backend izinkan:
+      formData.append("email", userData.email); 
       
       if (selectedFile) {
         formData.append("avatar", selectedFile);
       }
 
+      // Perbaikan: Gunakan api helper jika support FormData, atau fetch manual
+      // Disini pakai fetch manual agar kontrol FormData lebih mudah
+      const token = localStorage.getItem("token");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
          method: 'PUT',
          body: formData,
          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
+            "Authorization": `Bearer ${token}` // Jangan set Content-Type, biar browser set boundary multipart
          }
       });
 
@@ -258,7 +267,6 @@ export default function ProfileScreen() {
                                   <span className="relative flex items-center gap-2 z-10">
                                       {isLoading ? (
                                         <div className="flex items-center gap-2">
-                                            {/* Custom Inline SVG Spinner */}
                                             <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

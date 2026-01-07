@@ -25,9 +25,11 @@ export default function AnnouncementsScreen() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const response = await api.get('/announcements/active?limit=100');
+        // Update endpoint ke /public untuk mengambil data yang difilter active=true
+        const response = await api.get('/announcements/public?limit=100');
         if (response.success) {
-          setAnnouncements(response.data.data);
+           // Struktur response baru: response.data.data (karena ada pagination wrapper)
+           setAnnouncements(response.data.data);
         }
       } catch (error) {
         console.error(error);
@@ -69,8 +71,8 @@ export default function AnnouncementsScreen() {
                    key={item.id}
                    className="group relative flex flex-col md:flex-row w-full bg-white rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1.5 transition-all duration-300 overflow-hidden"
                 >
-                   {/* LEFT SIDE: VIDEO / GRAY PLACEHOLDER */}
-                   <div className="relative w-full md:w-[45%] h-64 md:h-auto bg-slate-100 shrink-0 overflow-hidden border-b md:border-b-0 md:border-r border-slate-100">
+                   {/* LEFT SIDE: VIDEO / IMAGE / GRAY PLACEHOLDER */}
+                   <div className="relative w-full md:w-[45%] h-64 md:h-auto bg-slate-100 shrink-0 overflow-hidden border-b md:border-b-0 md:border-r border-slate-100 group">
                        {item.video_url ? (
                            <>
                                 <video 
@@ -82,22 +84,27 @@ export default function AnnouncementsScreen() {
                                     playsInline 
                                 />
                                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                                
-                                {/* Play Icon Overlay */}
                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                     <div className="w-14 h-14 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/50 shadow-xl">
                                         <PlayCircle size={28} fill="currentColor" />
                                     </div>
                                 </div>
                            </>
+                       ) : item.image_url ? (
+                           // Tampilkan Gambar jika ada (fallback video)
+                           <img 
+                               src={item.image_url} 
+                               alt={item.title}
+                               className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-transform duration-700"
+                           />
                        ) : (
-                           // "Message Abu Abu" jika tidak ada video (Foto diabaikan sesuai request)
+                           // Placeholder Abu-abu jika tidak ada media
                            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-300 relative">
                                 <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.05]" />
                                 <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center mb-3">
                                     <VideoOff size={24} className="opacity-50" />
                                 </div>
-                                <span className="text-xs font-bold uppercase tracking-widest opacity-60">Tidak ada video</span>
+                                <span className="text-xs font-bold uppercase tracking-widest opacity-60">Tidak ada media</span>
                            </div>
                        )}
                    </div>
@@ -149,7 +156,7 @@ export default function AnnouncementsScreen() {
              </div>
              <h3 className="text-xl font-black text-slate-800 mb-2">Tidak Ada Pengumuman</h3>
              <p className="text-slate-500 text-sm max-w-xs mx-auto leading-relaxed">
-                Saat ini belum ada informasi terbaru yang dipublikasikan.
+               Saat ini belum ada informasi terbaru yang dipublikasikan.
              </p>
           </div>
         )}

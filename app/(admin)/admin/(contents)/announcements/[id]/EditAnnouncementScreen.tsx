@@ -38,18 +38,20 @@ export default function EditAnnouncementScreen() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
+  // Fetch Data Awal
   useEffect(() => {
     const fetchDetail = async () => {
       try {
         const result = await api.get(`/announcements/${id}`);
         
         if ((result.status || result.success) && result.data) {
-          setTitle(result.data.title);
-          setContent(result.data.content);
-          setIsActive(result.data.is_active);
+          const data = result.data;
+          setTitle(data.title);
+          setContent(data.content);
+          setIsActive(data.is_active);
           
-          if (result.data.image_url) setImagePreview(result.data.image_url);
-          if (result.data.video_url) setVideoPreview(result.data.video_url);
+          if (data.image_url) setImagePreview(data.image_url);
+          if (data.video_url) setVideoPreview(data.video_url);
         } else {
           setNotif({ type: "error", message: "Data tidak ditemukan" });
           setTimeout(() => router.push("/admin/announcements/list"), 2000);
@@ -64,6 +66,7 @@ export default function EditAnnouncementScreen() {
     if (id) fetchDetail();
   }, [id, router]);
 
+  // Submit Perubahan (PUT)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -77,7 +80,9 @@ export default function EditAnnouncementScreen() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/announcements/${id}`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"; 
+      
+      const res = await fetch(`${baseUrl}/announcements/${id}`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`,

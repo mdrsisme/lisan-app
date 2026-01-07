@@ -13,6 +13,7 @@ import { id } from "date-fns/locale";
 import PageHeader from "@/components/ui/PageHeader";
 import { themeColors } from "@/lib/color";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import AdminLayout from "@/components/layouts/AdminLayout";
 
 type User = {
   id: string;
@@ -28,13 +29,12 @@ type User = {
   created_at: string;
 };
 
+// PERBAIKAN 1: Sesuaikan Type Meta dengan JSON response backend
 type Meta = {
+  page: number;        // Sebelumnya current_page
+  limit: number;       // Sebelumnya per_page (Penyebab Error)
   total_data: number;
-  current_page: number;
-  per_page: number;
-  total_pages: number;
-  has_next: boolean;
-  has_prev: boolean;
+  total_page: number;  // Sebelumnya total_pages
 };
 
 export default function UsersList() {
@@ -73,12 +73,20 @@ export default function UsersList() {
       if (role) queryParams.append("role", role);
 
       const res = await api.get(`/users?${queryParams.toString()}`);
-      if (res.success) {
-        setUsers(res.data.data);
-        setMeta(res.data.meta);
+      
+      if (res.success && res.data) {
+        // PERBAIKAN 2: Mapping data yang lebih aman
+        // Mengambil users dari res.data.users
+        setUsers(res.data.users || []);
+        // Mengambil meta dari res.data.pagination
+        setMeta(res.data.pagination || null);
+      } else {
+        setUsers([]);
+        setMeta(null);
       }
     } catch (error) {
       console.error("Gagal mengambil data user");
+      setUsers([]);
     } finally {
       setTimeout(() => setLoading(false), 500);
     }
@@ -94,7 +102,10 @@ export default function UsersList() {
   };
 
   return (
-    <>
+    // AdminLayout dihapus jika di layout.tsx parent sudah ada, 
+    // tapi jika structure folder butuh, biarkan saja.
+    // Jika double sidebar, hapus <AdminLayout> di sini.
+    <> 
       {loading && <LoadingSpinner />}
 
       <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -111,6 +122,7 @@ export default function UsersList() {
           ]}
         />
 
+        {/* Filter Section */}
         <div className="bg-white p-2 rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2 items-center group/search focus-within:border-[#06b6d4]/50 transition-colors duration-300">
           <div className="relative flex-1 w-full group">
             <div className={`absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#06b6d4] transition-colors`}>
@@ -143,8 +155,8 @@ export default function UsersList() {
           </div>
         </div>
 
+        {/* Table Section */}
         <div className="bg-white border border-slate-200 rounded-[2rem] shadow-sm overflow-hidden relative">
-          
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -164,7 +176,7 @@ export default function UsersList() {
               </thead>
               
               <tbody className="divide-y divide-slate-50">
-                {users.length > 0 ? (
+                {users && users.length > 0 ? (
                   users.map((user) => (
                     <tr key={user.id} className="group hover:bg-[#ecfeff]/50 transition-all duration-200">
                       <td className="p-6 pl-8">
@@ -279,23 +291,25 @@ export default function UsersList() {
             </table>
           </div>
 
+          {/* Pagination */}
           {meta && (
             <div className="p-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wide bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                Page {meta.current_page} / {meta.total_pages}
+                {/* PERBAIKAN 3: Gunakan meta.page dan meta.total_page sesuai Type Meta baru */}
+                Page {meta.page} / {meta.total_page}
               </span>
 
               <div className="flex gap-2">
                 <button
                   onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                  disabled={!meta.has_prev}
+                  disabled={meta.page <= 1}
                   className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-extrabold hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-2 active:scale-95"
                 >
                   <ChevronLeft size={14} /> Sebelumnya
                 </button>
                 <button
                   onClick={() => setPage(prev => prev + 1)}
-                  disabled={!meta.has_next}
+                  disabled={meta.page >= meta.total_page}
                   className="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-extrabold hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center gap-2 active:scale-95"
                 >
                   Berikutnya <ChevronRight size={14} />

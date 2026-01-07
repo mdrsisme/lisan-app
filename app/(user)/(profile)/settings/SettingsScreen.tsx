@@ -9,12 +9,10 @@ import {
 import { api } from "@/lib/api";
 import UserNotification from "@/components/ui/UserNotification";
 import UserLayout from "@/components/layouts/UserLayout";
-// LoadingSpinner tidak di-import di sini karena kita pakai Loader2 untuk tombol
-// Jika ingin loading satu halaman penuh, baru import LoadingSpinner.
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false); // Untuk loading tombol
+  const [isLoading, setIsLoading] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   
@@ -41,9 +39,9 @@ export default function SettingsScreen() {
     
     setIsLoading(true);
     try {
+      // Gunakan helper api.put dengan endpoint /users/me
       const res = await api.put("/users/me", {
-        user_id: user.id,
-        password: passwords.newPassword
+        password: passwords.newPassword // Backend otomatis baca ID dari token
       });
 
       if (res.success || res.data) {
@@ -58,14 +56,16 @@ export default function SettingsScreen() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!user?.id) return;
     setIsLoading(true);
     try {
-      await api.delete("/users/me", { user_id: user.id });
+      // Gunakan helper api.delete dengan endpoint /users/me
+      await api.delete("/users/me"); // ID otomatis dari token
+      
+      // Bersihkan local storage dan redirect
       localStorage.clear();
       router.push("/login");
     } catch (error: any) {
-      setNotification({ type: 'error', message: error.message });
+      setNotification({ type: 'error', message: error.message || "Gagal menghapus akun" });
       setIsDeleteOpen(false);
     } finally {
       setIsLoading(false);
@@ -169,7 +169,6 @@ export default function SettingsScreen() {
                                       >
                                           {isLoading ? (
                                               <div className="flex items-center gap-2">
-                                                  {/* Pakai Loader2 karena ini di dalam tombol */}
                                                   <Loader2 className="animate-spin w-4 h-4" />
                                                   <span>Menyimpan...</span>
                                               </div>
@@ -243,12 +242,11 @@ export default function SettingsScreen() {
                    className="w-full py-3.5 rounded-2xl bg-rose-600 text-white font-bold text-sm shadow-xl shadow-rose-500/30 hover:bg-rose-700 hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 group"
                  >
                    {isLoading ? (
-                      // Pakai Loader2 untuk spinner kecil di tombol
                       <Loader2 className="animate-spin w-5 h-5" />
                    ) : (
-                     <>
-                        <Trash2 size={18} className="group-hover:animate-bounce" /> Ya, Hapus Sekarang
-                     </>
+                      <>
+                         <Trash2 size={18} className="group-hover:animate-bounce" /> Ya, Hapus Sekarang
+                      </>
                    )}
                  </button>
                  <button 

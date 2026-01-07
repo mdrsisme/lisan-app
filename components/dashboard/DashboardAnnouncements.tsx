@@ -21,8 +21,10 @@ export default function DashboardAnnouncements() {
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
-        const response = await api.get("/announcements/active");
+        // PERBAIKAN: Menggunakan endpoint public
+        const response = await api.get("/announcements/public");
         if (response.success) {
+          // Asumsi response.data.data adalah array pengumuman
           setAnnouncements(response.data.data.slice(0, 5));
         }
       } catch (error) {
@@ -98,7 +100,9 @@ export default function DashboardAnnouncements() {
             {hasMedia && (
                <div className="w-full md:w-[40%] h-[180px] md:h-full relative shrink-0 order-1 md:order-2 overflow-hidden bg-slate-900 border-b md:border-b-0 md:border-l border-white/10">
                   {current.video_url ? (
+                    // PERBAIKAN: Video Autoplay Loop Muted
                     <video 
+                      key={current.video_url} // Key penting agar re-render saat slide berubah
                       src={current.video_url} 
                       autoPlay 
                       muted 

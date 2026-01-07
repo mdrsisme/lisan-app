@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import Notification from "@/components/ui/Notification";
+import AdminLayout from "@/components/layouts/AdminLayout"; // Added layout wrapper
 import { api } from "@/lib/api";
 import { themeColors } from "@/lib/color";
 
@@ -55,7 +56,7 @@ export default function UsersVerifyScreen() {
     setIsLoading(true);
 
     try {
-      const res = await api.post("/auth/send-code", { email });
+      const res = await api.post("/auth/send-otp", { email }); // Updated endpoint to send-otp
 
       if (res.success || res.status) {
         setNotification({ 
@@ -127,6 +128,7 @@ export default function UsersVerifyScreen() {
   const iconActive = "group-focus-within:text-[#06b6d4]";
 
   return (
+    <AdminLayout>
       <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         <PageHeader
@@ -307,5 +309,6 @@ export default function UsersVerifyScreen() {
             </div>
         </div>
       </div>
+    </AdminLayout>
   );
 }

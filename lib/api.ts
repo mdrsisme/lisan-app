@@ -72,5 +72,27 @@ export const api = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Gagal menghapus data");
     return data;
-  }
+  },
+
+  patch: async (path: string, body: any) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+    const isFormData = body instanceof FormData;
+
+    const headers: Record<string, string> = {
+      "Authorization": `Bearer ${token}`,
+    };
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "PATCH", // Menggunakan method PATCH
+      headers,
+      body: isFormData ? body : JSON.stringify(body),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Gagal memperbarui data (partial)");
+    return data;
+  },
 };

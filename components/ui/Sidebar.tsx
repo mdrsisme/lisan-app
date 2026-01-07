@@ -5,25 +5,23 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  Megaphone,
-  HelpCircle,
   Settings,
   User,
   ChevronRight,
   MoreHorizontal,
   LogOut,
   X as CloseIcon,
-  BookOpen,
-  Layers,
-  FileText,
-  ArrowLeftRight,
+  BookOpen, 
   ShieldCheck,
   LayoutGrid,
   Sparkles,
   X,
   CheckCircle2,
   Trophy,
-  Key
+  Key,
+  ArrowLeftRight,
+  Megaphone,
+  BrainCircuit 
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
@@ -40,24 +38,30 @@ const menuGroups = [
     theme: themeColors.ocean,
     items: [
       { name: "Pengguna", href: "/admin/users", icon: Users },
-      { name: "Ranking", href: "/admin/ranking", icon: Trophy },
+      { name: "Leaderboard", href: "/admin/leaderboard", icon: Trophy },
     ],
   },
   {
     label: "Pembelajaran",
     theme: themeColors.solar,
     items: [
-      { name: "Course", href: "/admin/courses", icon: BookOpen },
-      { name: "Module", href: "/admin/modules", icon: Layers },
-      { name: "Lesson", href: "/admin/lessons", icon: FileText },
+      { name: "Dictionary", href: "/admin/dictionaries", icon: BookOpen }, 
+      { name: "Model AI", href: "/admin/ai-models", icon: BrainCircuit }, 
     ],
   },
   {
     label: "Konten",
-    theme: themeColors.midnight,
+    theme: themeColors.midnight, 
     items: [
       { name: "Pengumuman", href: "/admin/announcements", icon: Megaphone },
-      { name: "FAQ / Bantuan", href: "/admin/faq", icon: HelpCircle },
+    ],
+  },
+  {
+    label: "Akun",
+    theme: themeColors.midnight, 
+    items: [
+      { name: "Profile Saya", href: "/admin/profile", icon: User },
+      { name: "Settings", href: "/admin/settings", icon: Settings },
     ],
   },
 ];
@@ -256,20 +260,7 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
                     </div>
 
                     <div className="space-y-1">
-                        <Link href="/admin/profile" onClick={() => setIsProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all group"
-                        >
-                            <User size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> 
-                            Profile Saya
-                        </Link>
                         
-                        <Link href="/admin/settings" onClick={() => setIsProfileMenuOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all group"
-                        >
-                            <Settings size={18} className="text-slate-400 group-hover:text-indigo-500 transition-colors" /> 
-                            Pengaturan
-                        </Link>
-
                         <button onClick={() => { setIsProfileMenuOpen(false); setIsModeModalOpen(true); }}
                             className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-amber-600 bg-amber-50/50 hover:bg-amber-100 transition-all text-left group"
                         >
@@ -292,6 +283,7 @@ export default function Sidebar({ isOpen, onClose, onLogoutClick, userData: init
           </div>
         </div>
       </aside>
+      
       {isModeModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-visible relative animate-in zoom-in-95 duration-300 ring-1 ring-white/20">

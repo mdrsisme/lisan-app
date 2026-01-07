@@ -4,16 +4,26 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import UserLayout from "@/components/layouts/UserLayout";
 import { api } from "@/lib/api";
-import { User, UserStreak } from "@/types";
 import { 
   ArrowLeft, Flame, Trophy, Clock, 
   Zap, Loader2, Sparkles, Lock, Calendar as CalendarIcon
 } from "lucide-react";
 
+// Tipe Data
+interface StreakData {
+  id?: string;
+  user_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string | null;
+  freeze_count: number;
+}
+
 export default function StreakScreen() {
-  const [user, setUser] = useState<User | null>(null);
-  const [streakData, setStreakData] = useState<UserStreak | null>(null);
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userCreatedDate, setUserCreatedDate] = useState<string | null>(null);
 
   // --- DATE LOGIC ---
   const now = new Date();
@@ -26,48 +36,57 @@ export default function StreakScreen() {
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
 
   useEffect(() => {
+    // 1. Ambil User ID & Tanggal Buat Akun dari LocalStorage
     const userStr = localStorage.getItem("user");
     if (userStr) {
-      try { setUser(JSON.parse(userStr)); } catch (e) { console.error(e); }
+      try { 
+          const u = JSON.parse(userStr);
+          setUserId(u.id);
+          setUserCreatedDate(u.created_at);
+      } catch (e) { console.error(e); }
+    } else {
+        setLoading(false); // Stop loading jika tidak ada user login
     }
   }, []);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userId) return;
+
     const fetchDetail = async () => {
       try {
-        const res = await api.get(`/streaks/${user.id}`);
-        if (res.success) setStreakData(res.data);
-      } catch (error) { console.error(error); } 
-      finally { setLoading(false); }
+        // PERBAIKAN: Gunakan endpoint '/streaks/:userId' sesuai request
+        const res = await api.get(`/streaks/${userId}`);
+        
+        if (res.success) {
+            setStreakData(res.data);
+        }
+      } catch (error) { 
+          console.error("Gagal ambil streak:", error); 
+      } finally { 
+          setLoading(false); 
+      }
     };
+    
     fetchDetail();
-  }, [user]);
+  }, [userId]);
 
-  const getAccountAge = (dateString?: string) => {
-    if (!dateString) return "0";
-    const created = new Date(dateString);
+  const getAccountAge = () => {
+    if (!userCreatedDate) return "0";
+    const created = new Date(userCreatedDate);
     const diffTime = Math.abs(now.getTime() - created.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
   };
 
   const isTodayCompleted = () => {
-    if (!streakData?.last_activity_at) return false;
-    const last = new Date(streakData.last_activity_at);
-    return last.getDate() === currentDay && last.getMonth() === currentMonth && last.getFullYear() === currentYear;
+    if (!streakData?.last_activity_date) return false;
+    const todayStr = now.toISOString().split('T')[0];
+    return streakData.last_activity_date === todayStr;
   };
 
-  // [BARU] Fungsi Dummy untuk simulasi jumlah kegiatan per tanggal
-  // Nanti ganti logika ini dengan data dari API (misal: streakData.history)
+  // Fungsi Dummy untuk simulasi jumlah kegiatan
   const getActivityCount = (day: number) => {
-    // Contoh: Hari ini (jika selesai) ada 5 kegiatan
-    if (day === currentDay && isTodayCompleted()) return 5;
-    
-    // Contoh: Tanggal 15 bulan ini ada 3 kegiatan (Simulasi saja)
-    if (day === 15) return 3;
-    if (day === 10) return 8;
-    
-    return 0; // Default tidak ada kegiatan
+    if (day === currentDay && isTodayCompleted()) return 1;
+    return 0; 
   };
 
   return (
@@ -99,7 +118,7 @@ export default function StreakScreen() {
                 <p className="text-slate-500 font-medium text-sm animate-pulse">Memuat data streak...</p>
              </div>
           ) : (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
               {/* CARD 1: HERO STREAK */}
               <div className="relative overflow-hidden bg-[#0F172A] rounded-[2.5rem] p-8 text-white shadow-2xl shadow-slate-900/10 group">
@@ -120,8 +139,8 @@ export default function StreakScreen() {
                     </div>
 
                     <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
-                        <div className="absolute inset-0 bg-orange-500/20 rounded-full blur-2xl animate-pulse" />
-                        <Flame size={80} className="text-orange-500 fill-orange-500 drop-shadow-[0_0_20px_rgba(249,115,22,0.4)] animate-bounce [animation-duration:3s]" />
+                        <div className={`absolute inset-0 bg-orange-500/20 rounded-full blur-2xl ${streakData?.current_streak ? 'animate-pulse' : ''}`} />
+                        <Flame size={80} className={`text-orange-500 ${streakData?.current_streak ? 'fill-orange-500 animate-bounce' : 'text-slate-700'} drop-shadow-[0_0_20px_rgba(249,115,22,0.4)] transition-all`} />
                     </div>
                  </div>
               </div>
@@ -149,12 +168,12 @@ export default function StreakScreen() {
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Loyalitas</p>
                         <div className="flex items-center gap-2">
                              <div className="flex items-baseline gap-1.5">
-                                <p className="text-2xl font-black text-slate-800">{getAccountAge(user?.created_at)}</p>
+                                <p className="text-2xl font-black text-slate-800">{getAccountAge()}</p>
                                 <span className="text-xs font-bold text-slate-400">Hari</span>
-                            </div>
-                            <span className="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                             </div>
+                             <span className="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                                 <Sparkles size={8} /> Member
-                            </span>
+                             </span>
                         </div>
                     </div>
                  </div>
@@ -195,8 +214,9 @@ export default function StreakScreen() {
                               const day = i + 1;
                               const isToday = day === currentDay;
                               const isFuture = day > currentDay;
+                              
                               const completed = isToday && isTodayCompleted();
-                              const activityCount = getActivityCount(day); // Ambil jumlah kegiatan
+                              const activityCount = getActivityCount(day);
 
                               return (
                                   <div 
@@ -221,7 +241,7 @@ export default function StreakScreen() {
                                           </div>
                                       )}
 
-                                      {/* [BARU] Indikator Jumlah Kegiatan (Badge Bulat Kecil di Kanan Bawah) */}
+                                      {/* Indikator Jumlah Kegiatan */}
                                       {activityCount > 0 && !isFuture && (
                                           <div className={`
                                               absolute -bottom-1 -right-1 sm:bottom-0 sm:right-0
@@ -237,13 +257,13 @@ export default function StreakScreen() {
                                       {/* ANIMASI API BERGERAK (Jika Selesai/Today Completed) */}
                                       {completed && (
                                           <>
-                                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500/40 rounded-full blur-md animate-pulse" />
-                                            <div className="absolute -top-2 -right-2 md:-top-3 md:-right-2 animate-bounce [animation-duration:2s] z-20">
-                                                <Flame 
-                                                    size={20} 
-                                                    className="text-orange-500 fill-orange-500 drop-shadow-sm transform rotate-12" 
-                                                />
-                                            </div>
+                                              <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500/40 rounded-full blur-md animate-pulse" />
+                                              <div className="absolute -top-2 -right-2 md:-top-3 md:-right-2 animate-bounce [animation-duration:2s] z-20">
+                                                  <Flame 
+                                                      size={20} 
+                                                      className="text-orange-500 fill-orange-500 drop-shadow-sm transform rotate-12" 
+                                                  />
+                                              </div>
                                           </>
                                       )}
                                   </div>
@@ -263,7 +283,7 @@ export default function StreakScreen() {
                           <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wide">Selesai</span>
                       </div>
                       <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold">3</div>
+                          <div className="w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center text-[8px] text-white font-bold">1</div>
                           <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wide">Jml. Kegiatan</span>
                       </div>
                   </div>

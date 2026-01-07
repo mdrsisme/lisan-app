@@ -5,18 +5,16 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   Mail, User as UserIcon, Shield, Calendar, 
   Hash, Lock, Award, Zap, 
-  Copy, RefreshCw, Check, LayoutGrid, Users, BookOpen, Fingerprint, ChevronRight,
+  Copy, RefreshCw, Check, LayoutGrid, Users, Fingerprint,
   Crown, Sparkles
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { themeColors } from "@/lib/color";
-import Link from "next/link"; 
 import AdminLayout from "@/components/layouts/AdminLayout";
 import PageHeader from "@/components/ui/PageHeader"; 
 
-// Tipe data disesuaikan dengan backend
 type UserDetail = {
   id: string;
   email: string;
@@ -102,8 +100,6 @@ export default function UserDetailScreen() {
   return (
     <AdminLayout>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-        
-        {/* Page Header */}
         <PageHeader
             theme={themeColors.ocean}
             title="Detail Akun"
@@ -117,17 +113,12 @@ export default function UserDetailScreen() {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-           {/* LEFT COLUMN: PROFILE CARD */}
            <div className="lg:col-span-4 flex flex-col gap-6">
               <div className="relative bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden p-8 text-center group hover:border-indigo-100 transition-all duration-300">
-
-                 {/* Background Decorative */}
                  <div className={`absolute top-0 left-0 w-full h-40 ${user.is_premium ? 'bg-gradient-to-br from-amber-200 via-orange-100 to-white' : 'bg-gradient-to-br from-slate-100 to-white'} z-0`} />
                  
                  <div className="relative z-10 flex flex-col items-center mt-6">
-                    
-                    {/* Avatar Container */}
+
                     <div className="relative mb-4">
                        <div className={`w-32 h-32 rounded-[2rem] p-1.5 bg-white shadow-2xl ${user.is_premium ? 'shadow-amber-500/20 ring-4 ring-amber-100' : 'shadow-slate-200/50 ring-4 ring-slate-50'}`}>
                           <div className="w-full h-full rounded-[1.7rem] overflow-hidden bg-slate-50 flex items-center justify-center relative">
@@ -140,8 +131,7 @@ export default function UserDetailScreen() {
                             )}
                           </div>
                        </div>
-                       
-                       {/* Verified Badge */}
+
                        {user.is_verified && (
                            <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-xl border-4 border-white shadow-sm" title="Terverifikasi">
                               <Shield size={14} fill="currentColor" />
@@ -151,8 +141,7 @@ export default function UserDetailScreen() {
 
                     <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-tight">{user.full_name}</h2>
                     <p className="text-sm font-bold text-slate-400 mb-4">@{user.username}</p>
-                    
-                    {/* BADGE PREMIUM / FREEMIUM (REQUEST UTAMA) */}
+
                     <div className="mb-6">
                         {user.is_premium ? (
                             <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30 animate-pulse-slow">
@@ -180,7 +169,6 @@ export default function UserDetailScreen() {
                  </div>
               </div>
 
-              {/* STATS CARD */}
               <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 hover:border-indigo-100 transition-all">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
                       <Award size={16} className="text-indigo-500" /> Statistik Game
@@ -200,10 +188,7 @@ export default function UserDetailScreen() {
               </div>
            </div>
 
-           {/* RIGHT COLUMN: DETAILS */}
            <div className="lg:col-span-8 flex flex-col gap-6">
-              
-              {/* Personal Info Card */}
               <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 hover:border-indigo-100 transition-all">
                  <div className="flex items-center justify-between mb-8">
                     <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-wide">
@@ -261,7 +246,6 @@ export default function UserDetailScreen() {
                  </div>
               </div>
 
-              {/* Security Card */}
               <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 hover:border-indigo-100 transition-all">
                  <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 mb-6 uppercase tracking-wide">
                     <Lock size={18} className="text-rose-500" /> Keamanan
@@ -278,34 +262,8 @@ export default function UserDetailScreen() {
                        </div>
                     </div>
                     <button className="px-4 py-2 bg-white border border-slate-200 text-slate-400 text-xs font-bold rounded-lg cursor-not-allowed opacity-60">
-                       Reset Password
+                        Reset Password
                     </button>
-                 </div>
-              </div>
-
-              {/* Management Action Card */}
-              <div className="relative bg-slate-900 rounded-[2.5rem] p-8 overflow-hidden shadow-2xl group">
-                 <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-500 rounded-full blur-[100px] opacity-30 group-hover:opacity-50 transition-opacity duration-700" />
-                 <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-fuchsia-500 rounded-full blur-[100px] opacity-20 group-hover:opacity-40 transition-opacity duration-700" />
-                 
-                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                       <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-lg">
-                          <BookOpen size={24} />
-                       </div>
-                       <div>
-                          <h3 className="text-xl font-black text-white tracking-tight mb-1">Enrollment Kursus</h3>
-                          <p className="text-slate-400 text-sm font-medium">Kelola akses dan progres belajar user ini.</p>
-                       </div>
-                    </div>
-
-                    <Link 
-                       href={`/admin/users/${user.id}/my-courses`}
-                       className="w-full md:w-auto px-6 py-3 rounded-xl bg-white text-slate-900 font-bold text-sm hover:bg-indigo-50 transition-colors shadow-lg flex items-center justify-center gap-2 group/btn"
-                    >
-                       Lihat Detail
-                       <ChevronRight size={16} className="text-slate-400 group-hover/btn:text-indigo-600 transition-colors group-hover/btn:translate-x-1 duration-300" />
-                    </Link>
                  </div>
               </div>
 
