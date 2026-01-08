@@ -125,27 +125,6 @@ export default function DictionaryDetailScreen({ params }: { params: Promise<{ i
                                     <span className="text-sm font-black text-slate-700">{stats.total} Materi</span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3 bg-slate-50 px-5 py-3 rounded-2xl border border-slate-100">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${stats.percentage === 100 ? 'bg-yellow-100 text-yellow-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                                    {stats.percentage === 100 ? <Medal size={18} /> : <Layers size={18} />}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Progress Circle Visual (Opsional, mempercantik tampilan) */}
-                    <div className="hidden md:flex relative w-32 h-32 items-center justify-center">
-                        <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100" />
-                            <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="transparent" 
-                                strokeDasharray={377} 
-                                strokeDashoffset={377 - (377 * stats.percentage) / 100} 
-                                className="text-indigo-500 transition-all duration-1000 ease-out" 
-                                strokeLinecap="round"
-                            />
-                        </svg>
-                        <div className="absolute text-center">
-                            <span className="text-2xl font-black text-slate-800">{stats.percentage}%</span>
                         </div>
                     </div>
                 </div>
