@@ -8,7 +8,7 @@ import HandTracker from "@/components/ui/HandTracker";
 
 // --- KONFIGURASI MODEL ---
 const DEFAULT_MODEL_URL = 'https://storage.googleapis.com/model-bisindo-v1-lisan/model.json';
-const THRESHOLD = 0.70; // Sedikit diturunkan agar lebih responsif di pameran
+const THRESHOLD = 0.70; 
 const LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 interface GestureTestProps {
@@ -36,24 +36,21 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
   const [isInZone, setIsInZone] = useState(false);
   const [isValidated, setIsValidated] = useState(false);
 
-  // 1. Inisialisasi Model & Auto-Start Kamera
+  // 1. Load Model & Auto Start Camera
   useEffect(() => {
     const initApp = async () => {
       try {
         setLoading(true);
         await tf.setBackend('webgl');
         await tf.ready();
-        
         const targetModelUrl = item.ai_model_url || DEFAULT_MODEL_URL;
         const loadedModel = await tf.loadGraphModel(targetModelUrl);
         
-        // Warmup
         const dummy = tf.zeros([1, 640, 640, 3]);
         const res = loadedModel.execute(dummy) as tf.Tensor;
         tf.dispose([dummy, res]);
         setModel(loadedModel);
 
-        // Langsung buka kamera
         await startCamera();
         setLoading(false);
       } catch (err) { 
@@ -61,9 +58,7 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
         setLoading(false);
       }
     };
-
     initApp();
-
     return () => { 
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       if (videoRef.current?.srcObject) {
@@ -85,9 +80,7 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
           setCameraActive(true);
         };
       }
-    } catch (err) { 
-      console.error("Camera Error:", err);
-    }
+    } catch (err) { console.error("Camera Error:", err); }
   };
 
   // 2. Loop Deteksi Utama
@@ -96,20 +89,16 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
         requestRef.current = requestAnimationFrame(detectFrame);
         return;
     }
-
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
     if (!ctx) return;
 
-    // Pastikan ukuran canvas sinkron dengan video stream
-    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+    if (canvas.width !== video.videoWidth) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
     }
 
-    // Definisi Area Tengah (Guide Box)
     const zoneX = canvas.width * 0.20; 
     const zoneY = canvas.height * 0.20; 
     const zoneW = canvas.width * 0.60; 
@@ -142,7 +131,6 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
 
       tf.dispose([res, trans, boxes, scores, classes, nms]);
 
-      // --- MENGGAMBAR KE CANVAS ---
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const scaleX = canvas.width / 640;
       const scaleY = canvas.height / 640;
@@ -150,14 +138,10 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
       let frameMatch = false;
       let frameInZone = false;
 
-      // 1. Gambar Bounding Box Hasil Deteksi
       for (let i = 0; i < nmsIndices.length; i++) {
         const idx = nmsIndices[i];
         const [y1, x1, y2, x2] = boxesData.slice(idx * 4, (idx + 1) * 4);
         const label = LABELS[classesData[idx]];
-        const score = scoresData[idx];
-
-        // Koordinat (Mirror disesuaikan dengan CSS scale-x-[-1])
         const _w = (x2 - x1) * scaleX;
         const _h = (y2 - y1) * scaleY;
         const _x = x1 * scaleX; 
@@ -166,7 +150,6 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
         const centerX = _x + (_w / 2);
         const centerY = _y + (_h / 2);
 
-        // Logika kecocokan
         const targetWord = item.target_gesture_data || item.word;
         const isCorrect = label.toUpperCase() === targetWord.toUpperCase();
         const inZone = centerX > zoneX && centerX < (zoneX + zoneW) && centerY > zoneY && centerY < (zoneY + zoneH);
@@ -174,25 +157,18 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
         if (isCorrect) frameMatch = true;
         if (inZone) frameInZone = true;
 
-        // Gambar Box
         ctx.strokeStyle = isCorrect && inZone ? '#22c55e' : (isCorrect ? '#f59e0b' : '#ef4444');
         ctx.lineWidth = 4;
         ctx.strokeRect(_x, _y, _w, _h);
-
-        // Gambar Label Background
         ctx.fillStyle = ctx.strokeStyle;
         ctx.fillRect(_x, _y - 25, 60, 25);
-        
-        // Teks Label
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 16px Inter";
         ctx.fillText(`${label}`, _x + 5, _y - 7);
       }
 
-      // 2. Gambar Panduan Kotak Tengah
       ctx.strokeStyle = frameInZone ? '#22c55e' : 'rgba(255,255,255,0.3)';
       ctx.setLineDash([10, 5]);
-      ctx.lineWidth = 2;
       ctx.strokeRect(zoneX, zoneY, zoneW, zoneH);
       ctx.setLineDash([]);
 
@@ -211,102 +187,123 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
 
   return (
     <div className="fixed inset-0 bg-slate-950 z-50 flex flex-col font-sans overflow-hidden">
-      {/* Header */}
+      {/* Navbar */}
       <div className="p-4 flex items-center justify-between border-b border-white/5 bg-slate-900/40 backdrop-blur-xl">
          <button onClick={onClose} className="p-2 text-slate-400 hover:text-white transition-all hover:bg-white/10 rounded-xl">
             <ArrowLeft size={24} />
          </button>
          <div className="text-center">
-            <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] leading-none mb-1">Dual-Sensor AI Vision</h2>
-            <p className="text-sm font-bold text-white tracking-tight">Challenge: "{item.word}"</p>
+            <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] leading-none mb-1">Dual-Sensor Processing</h2>
+            <p className="text-sm font-bold text-white tracking-tight">Peragakan Isyarat: "{item.word}"</p>
          </div>
          <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-[10px] font-black text-green-500 uppercase">Live Detection</span>
+            <span className="text-[10px] font-black text-green-500 uppercase tracking-tighter">Live</span>
          </div>
       </div>
 
-      <main className="flex-1 flex flex-col lg:flex-row p-4 gap-4 overflow-hidden">
+      <main className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         
-        {/* Panel Kiri: Instruksi Besar */}
-        <div className="flex-[0.8] bg-white rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl relative border-4 border-slate-100">
-            <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none"><Sparkles size={120} /></div>
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                <span className="px-4 py-1.5 bg-slate-100 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Target Simbol</span>
-                <div className="bg-slate-50 w-full aspect-square rounded-[4rem] border-4 border-dashed border-slate-200 flex items-center justify-center shadow-inner group transition-all duration-500 overflow-hidden">
-                    <h1 className="text-[15rem] font-black text-slate-900 leading-none drop-shadow-2xl group-hover:scale-110 transition-transform">
+        {/* ROW 1: DUAL CAMERA (KIRI & KANAN) */}
+        <div className="flex-[1.4] flex flex-col md:flex-row gap-4">
+           {/* Box Kiri: YOLO Detection */}
+           <div className={`flex-1 relative rounded-[2.5rem] overflow-hidden border-4 transition-all duration-500 shadow-2xl ${isValidated ? 'border-green-500 bg-green-500/10' : 'border-slate-800 bg-slate-900'}`}>
+                <div className="absolute top-4 left-4 z-30 bg-black/60 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10 flex items-center gap-2 shadow-xl">
+                    <Box size={14} className="text-indigo-400" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">AI Vision: Object Mapping</span>
+                </div>
+                <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover scale-x-[-1]" muted playsInline />
+                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover scale-x-[-1] z-20" />
+                {loading && (
+                    <div className="absolute inset-0 z-40 bg-slate-900 flex flex-col items-center justify-center">
+                        <Loader2 className="animate-spin text-indigo-500 mb-4" size={40} />
+                        <p className="text-[10px] font-black text-indigo-500 tracking-[0.3em] uppercase">Syncing AI Brain...</p>
+                    </div>
+                )}
+           </div>
+
+           {/* Box Kanan: MediaPipe Hand Tracker */}
+           <div className={`flex-1 relative rounded-[2.5rem] overflow-hidden border-4 transition-all duration-500 shadow-2xl ${isValidated ? 'border-green-500 bg-green-500/10' : 'border-slate-800 bg-black'}`}>
+                <div className="absolute top-4 left-4 z-30 bg-black/60 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10 flex items-center gap-2 shadow-xl">
+                    <Hand size={14} className="text-cyan-400" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Spatial: Skeleton Tracker</span>
+                </div>
+                {cameraActive && (
+                    <div className="absolute inset-0 scale-x-[-1] opacity-80">
+                        <HandTracker />
+                    </div>
+                )}
+                {isValidated && <div className="absolute inset-0 bg-green-500/10 z-30 animate-pulse" />}
+           </div>
+        </div>
+
+        {/* ROW 2: TARGET SIMBOL (MEMANJANG DI BAWAH) */}
+        <div className="flex-[0.6] bg-white rounded-[2.5rem] border-4 border-slate-100 shadow-2xl flex flex-row items-center px-10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Sparkles size={80} /></div>
+            
+            {/* Simbol Utama (Kiri) */}
+            <div className="flex-1 flex items-center gap-8 border-r border-slate-100">
+                <div className="bg-slate-50 w-32 h-32 rounded-3xl border-2 border-black/5 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500">
+                    <h1 className="text-8xl font-black text-slate-900 leading-none">
                         {item.target_gesture_data || item.word}
                     </h1>
                 </div>
-                
-                <div className="mt-8 grid grid-cols-2 gap-3 w-full">
-                    <div className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center gap-2 ${isMatch ? 'bg-green-50 border-green-500 text-green-700' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
-                        <span className="font-black uppercase text-[9px] tracking-widest leading-none">Akurasi Gerakan</span>
-                        {isMatch ? <Check size={20} className="text-green-600" /> : <RefreshCw size={20} className="animate-spin opacity-20" />}
+                <div className="flex flex-col">
+                    <span className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest w-fit mb-2">Target Symbol</span>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+                        Huruf {item.word}
+                    </h3>
+                </div>
+            </div>
+
+            {/* Indikator Status (Kanan) */}
+            <div className="flex-1 flex gap-4 pl-10">
+                <div className={`flex-1 p-5 rounded-[2rem] border-2 transition-all flex items-center gap-4 ${isMatch ? 'bg-green-50 border-green-500 text-green-700 shadow-[0_5px_20px_rgba(34,197,94,0.1)]' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
+                    <div className={`p-2 rounded-xl ${isMatch ? 'bg-green-500 text-white' : 'bg-slate-200'}`}>
+                        <Check size={20} className={isMatch ? 'animate-in zoom-in' : 'opacity-20'} />
                     </div>
-                    <div className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center gap-2 ${isInZone ? 'bg-green-50 border-green-500 text-green-700' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
-                        <span className="font-black uppercase text-[9px] tracking-widest leading-none">Posisi Tangan</span>
-                        {isInZone ? <Target size={20} className="text-green-600" /> : <div className="w-5 h-5 rounded-full border-2 border-slate-200" />}
+                    <div className="flex flex-col leading-none">
+                        <span className="font-black uppercase text-[10px] tracking-widest">Gerakan</span>
+                        <span className="text-xs font-bold">{isMatch ? "Terverifikasi" : "Belum Cocok"}</span>
+                    </div>
+                </div>
+                <div className={`flex-1 p-5 rounded-[2rem] border-2 transition-all flex items-center gap-4 ${isInZone ? 'bg-green-50 border-green-500 text-green-700 shadow-[0_5px_20px_rgba(34,197,94,0.1)]' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
+                    <div className={`p-2 rounded-xl ${isInZone ? 'bg-green-500 text-white' : 'bg-slate-200'}`}>
+                        <Target size={20} className={isInZone ? 'animate-in zoom-in' : 'opacity-20'} />
+                    </div>
+                    <div className="flex flex-col leading-none">
+                        <span className="font-black uppercase text-[10px] tracking-widest">Posisi</span>
+                        <span className="text-xs font-bold">{isInZone ? "Tepat Sasaran" : "Masuk ke Box"}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        {/* Panel Kanan: Dual Viewport */}
-        <div className="flex-[1.2] flex flex-col gap-4">
-           {/* YOLO Sensor */}
-           <div className={`flex-1 relative rounded-[2.5rem] overflow-hidden border-4 transition-all duration-500 shadow-2xl ${isValidated ? 'border-green-500 bg-green-500/10' : 'border-slate-800 bg-slate-900'}`}>
-                <div className="absolute top-4 left-4 z-30 bg-black/60 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10 flex items-center gap-2 shadow-xl">
-                    <Box size={14} className="text-indigo-400" />
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Primary: AI Object Mapping</span>
-                </div>
-                
-                <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover scale-x-[-1]" muted playsInline />
-                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover scale-x-[-1] z-20" />
-                
-                {loading && (
-                    <div className="absolute inset-0 z-40 bg-slate-900 flex flex-col items-center justify-center">
-                        <Loader2 className="animate-spin text-indigo-500 mb-4" size={40} />
-                        <p className="text-[10px] font-black text-indigo-500 tracking-[0.3em] uppercase">Booting YOLO Engine...</p>
-                    </div>
-                )}
-           </div>
-
-           {/* MediaPipe Sensor */}
-           <div className={`flex-1 relative rounded-[2.5rem] overflow-hidden border-4 transition-all duration-500 shadow-2xl ${isValidated ? 'border-green-500 bg-green-500/10' : 'border-slate-800 bg-black'}`}>
-                <div className="absolute top-4 left-4 z-30 bg-black/60 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10 flex items-center gap-2 shadow-xl">
-                    <Hand size={14} className="text-cyan-400" />
-                    <span className="text-[10px] font-black text-white uppercase tracking-widest">Secondary: Skeleton Visualizer</span>
-                </div>
-                {cameraActive && (
-                    <div className="absolute inset-0 scale-x-[-1] opacity-70">
-                        <HandTracker />
-                    </div>
-                )}
-                {isValidated && (
-                    <div className="absolute inset-0 bg-green-500/10 z-30 animate-pulse" />
-                )}
-           </div>
-        </div>
       </main>
 
-      {/* Footer / Finish Button */}
+      {/* Footer / Submit Progress */}
       <div className="p-6 bg-slate-900/60 backdrop-blur-md border-t border-white/5">
          <button
             onClick={onFinish}
             disabled={!isValidated || isFinishing}
-            className={`w-full max-w-3xl mx-auto py-6 rounded-[2.5rem] font-black text-xs tracking-[0.4em] uppercase flex items-center justify-center gap-3 transition-all duration-500 shadow-2xl ${
+            className={`w-full max-w-4xl mx-auto py-6 rounded-[2.5rem] font-black text-xs tracking-[0.4em] uppercase flex items-center justify-center gap-3 transition-all duration-500 shadow-2xl ${
                 isValidated 
-                ? 'bg-green-500 text-slate-950 shadow-green-500/40 scale-[1.02] active:scale-95' 
+                ? 'bg-green-500 text-slate-950 shadow-green-500/40 scale-[1.02] hover:bg-green-400 active:scale-95' 
                 : 'bg-slate-800 text-slate-600 opacity-40 cursor-not-allowed'
             }`}
          >
             {isFinishing ? (
-                <Loader2 className="animate-spin" />
+                <div className="flex items-center gap-3">
+                    <Loader2 className="animate-spin" size={20} />
+                    <span>Menyimpan Progress...</span>
+                </div>
             ) : isValidated ? (
-                <><Trophy size={20} className="animate-bounce" /> Tantangan Berhasil! Klik Disini</>
+                <><Trophy size={20} className="animate-bounce" /> Berhasil! Selesaikan & Kembali</>
             ) : (
-                <><RefreshCw size={18} className="animate-spin" style={{ animationDuration: '3s' }} /> {isMatch ? "Tahan di posisi tengah..." : `Lakukan isyarat "${item.word}"`}</>
+                <div className="flex items-center gap-3">
+                    <RefreshCw size={18} className="animate-spin" style={{ animationDuration: '3s' }} /> 
+                    <span>{isMatch ? "Tahan posisi di tengah..." : `Latih Huruf ${item.word}`}</span>
+                </div>
             )}
          </button>
       </div>
