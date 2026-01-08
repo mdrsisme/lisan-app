@@ -129,10 +129,6 @@ export default function DictionaryDetailScreen({ params }: { params: Promise<{ i
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${stats.percentage === 100 ? 'bg-yellow-100 text-yellow-600' : 'bg-emerald-100 text-emerald-600'}`}>
                                     {stats.percentage === 100 ? <Medal size={18} /> : <Layers size={18} />}
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Progress</span>
-                                    <span className="text-sm font-black text-slate-700">{stats.percentage}% Selesai</span>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -162,9 +158,6 @@ export default function DictionaryDetailScreen({ params }: { params: Promise<{ i
                         <span className="w-2 h-8 bg-indigo-500 rounded-full" />
                         Daftar Materi
                     </h3>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-slate-100 shadow-sm">
-                        {stats.learned} / {stats.total} Selesai
-                    </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
