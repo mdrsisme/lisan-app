@@ -73,7 +73,7 @@ export default function UserNavbar() {
   const navLinks = [
     { href: "/dashboard", label: "Beranda", icon: LayoutGrid },
     { href: "/dictionaries", label: "Kamus", icon: BookOpen },
-    { href: "/live-translation", label: "Live Translation", icon: Languages },
+    { href: "/live", label: "Live Translation", icon: Languages },
   ];
 
   const UserAvatar = ({ className, size = "sm" }: { className?: string, size?: "sm" | "lg" }) => {
