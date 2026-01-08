@@ -7,8 +7,8 @@ import LiveWordDetector from "@/components/translation/LiveWordDetector";
 import HandTracker from "@/components/ui/HandTracker"; 
 
 import { 
-  Eraser, Copy, Type, Languages, MessageSquareText, 
-  Volume2, Delete, Space, Sparkles
+  History, Eraser, Copy, Type, Languages, MessageSquareText, 
+  Volume2, Delete, Space, AlertTriangle, Sparkles, ScanEye
 } from "lucide-react";
 
 export default function LiveTranslationScreen() {
@@ -18,31 +18,39 @@ export default function LiveTranslationScreen() {
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll log
   useEffect(() => {
     if (scrollRef.current) {
         scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
     }
   }, [history]);
 
-  // Handlers
-  const handleResult = (result: string) => setHistory(prev => [...prev, result]);
-  
-  const handleClear = () => {
-    if (history.length > 0 && confirm("Hapus semua riwayat terjemahan?")) setHistory([]);
+  const handleResult = (result: string) => {
+    setHistory(prev => [...prev, result]);
   };
 
-  const handleDeleteLast = () => setHistory(prev => prev.slice(0, -1));
-  const handleSpace = () => setHistory(prev => [...prev, " "]); 
+  const handleClear = () => {
+    if (history.length > 0 && confirm("Hapus semua riwayat terjemahan?")) {
+        setHistory([]);
+    }
+  };
+
+  const handleDeleteLast = () => {
+    setHistory(prev => prev.slice(0, -1));
+  };
+
+  const handleSpace = () => {
+    setHistory(prev => [...prev, " "]); 
+  };
   
-  const getFullText = () => activeTab === 'alphabet' ? history.join("") : history.join(" ");
+  const getFullText = () => {
+    return activeTab === 'alphabet' ? history.join("") : history.join(" ");
+  };
 
   const handleCopy = () => {
     const text = getFullText();
-    if (text) {
-        navigator.clipboard.writeText(text);
-        alert("Teks berhasil disalin!");
-    }
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    alert("Teks berhasil disalin!");
   };
 
   const handleSpeak = () => {
@@ -53,168 +61,187 @@ export default function LiveTranslationScreen() {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'id-ID'; 
+        utterance.rate = 0.9;
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => setIsSpeaking(false);
         utterance.onerror = () => setIsSpeaking(false);
         window.speechSynthesis.speak(utterance);
+    } else {
+        alert("Browser Anda tidak mendukung Text-to-Speech.");
     }
   };
 
   return (
     <UserLayout>
-      {/* Container Full Height (One Page Feel) */}
-      <div className="h-[calc(100vh-64px)] bg-[#F8FAFC] font-sans flex flex-col overflow-hidden">
+      <div className="min-h-screen bg-[#F8FAFC] font-sans pb-32">
         
-        {/* HEADER COMPACT */}
-        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex-none z-30">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-200">
-                        <Languages size={18} />
-                    </div>
+        <div className="bg-white/90 backdrop-blur-xl border-b border-slate-200 sticky top-[64px] z-30 transition-all shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    
                     <div>
-                        <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none">Live Translation</h1>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Dual-Core AI Detector</p>
+                        <h1 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                            <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-200">
+                                <Languages size={20} />
+                            </div>
+                            Live Translation
+                        </h1>
+                        <p className="text-xs text-slate-500 font-medium ml-11 -mt-1">
+                            Dual-Core AI Detector (YOLO + MediaPipe)
+                        </p>
                     </div>
-                </div>
 
-                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                    <button
-                        onClick={() => { setActiveTab('alphabet'); setHistory([]); }}
-                        className={`px-5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                            activeTab === 'alphabet' 
-                            ? 'bg-white text-indigo-600 shadow-sm' 
-                            : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                    >
-                        <Type size={12} className="inline mr-1 mb-0.5" /> Alfabet
-                    </button>
-                    <button
-                        onClick={() => { setActiveTab('word'); setHistory([]); }}
-                        className={`px-5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                            activeTab === 'word' 
-                            ? 'bg-white text-cyan-600 shadow-sm' 
-                            : 'text-slate-500 hover:text-slate-700'
-                        }`}
-                    >
-                        <MessageSquareText size={12} className="inline mr-1 mb-0.5" /> Kata
-                    </button>
+                    <div className="flex bg-slate-100 p-1 rounded-2xl self-start md:self-auto w-full md:w-auto border border-slate-200">
+                        <button
+                            onClick={() => { setActiveTab('alphabet'); setHistory([]); }}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+                                activeTab === 'alphabet' 
+                                ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5' 
+                                : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            <Type size={14} /> Alfabet
+                        </button>
+                        <button
+                            onClick={() => { setActiveTab('word'); setHistory([]); }}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+                                activeTab === 'word' 
+                                ? 'bg-white text-cyan-600 shadow-sm ring-1 ring-black/5' 
+                                : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                        >
+                            <MessageSquareText size={14} /> Kata
+                        </button>
+                    </div>
                 </div>
             </div>
-        </header>
+        </div>
 
-        {/* MAIN CONTENT (FLEX GROW) */}
-        <main className="flex-1 flex flex-col lg:flex-row p-4 gap-4 overflow-hidden max-w-[1920px] mx-auto w-full">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8 space-y-6">
             
-            {/* KIRI: KAMERA (MEMENUHI RUANG) */}
-            <div className="flex-[1.4] flex flex-col gap-4 min-h-0">
+            <div className="animate-in fade-in zoom-in-95 duration-500">
                 {activeTab === 'alphabet' ? (
-                    <div className="h-full grid grid-rows-2 gap-4">
-                        {/* Kamera Utama */}
-                        <div className="relative w-full h-full bg-slate-900 rounded-[2rem] overflow-hidden border-4 border-white shadow-lg">
-                            <div className="absolute top-4 left-4 z-20 bg-black/50 backdrop-blur px-3 py-1 rounded-full border border-white/10">
-                                <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Sign Recognition</span>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                        
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2 px-1">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                    Primary: Sign Recognition
+                                </span>
                             </div>
-                            <div className="w-full h-full">
-                                <LiveAlphabetDetector onResult={handleResult} />
-                            </div>
+                            <LiveAlphabetDetector onResult={handleResult} />
                         </div>
 
-                        {/* Skeleton Visualizer */}
-                        <div className="relative w-full h-full bg-black rounded-[2rem] overflow-hidden border-4 border-white shadow-lg">
-                            <div className="absolute top-4 left-4 z-20 bg-black/50 backdrop-blur px-3 py-1 rounded-full border border-white/10">
-                                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Skeleton Map</span>
+                        <div className="flex flex-col gap-2">
+                             <div className="flex items-center gap-2 px-1">
+                                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                    Secondary: Skeleton Visualizer
+                                </span>
                             </div>
-                            <div className="w-full h-full scale-90"> {/* Scale down sedikit agar fit */}
+                            <div className="relative w-full aspect-square md:aspect-video rounded-3xl overflow-hidden shadow-lg border border-slate-200 bg-black">
                                 <HandTracker />
                             </div>
                         </div>
+
                     </div>
                 ) : (
-                    /* Mode Kata: Satu Kamera Besar */
-                    <div className="relative w-full h-full bg-slate-900 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-2xl">
-                        <div className="absolute top-6 left-6 z-20 bg-black/50 backdrop-blur px-4 py-2 rounded-xl border border-white/10">
-                            <span className="text-xs font-black text-cyan-400 uppercase tracking-widest">YOLOv8 Word Detection</span>
+                    <div className="w-full">
+                         <div className="flex items-center gap-2 px-1 mb-2">
+                                <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                    Lisan Core: Word Detection
+                                </span>
                         </div>
-                        <div className="w-full h-full">
-                            <LiveWordDetector onResult={handleResult} />
-                        </div>
+                        <LiveWordDetector onResult={handleResult} />
                     </div>
                 )}
             </div>
 
-            {/* KANAN: HASIL & KONTROL (FIXED WIDTH) */}
-            <div className="flex-1 lg:flex-[0.6] flex flex-col gap-4 min-w-[320px]">
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden relative">
                 
-                {/* Panel Hasil */}
-                <div className="flex-1 bg-white rounded-[2.5rem] border border-slate-200 shadow-xl flex flex-col overflow-hidden">
-                    <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <Sparkles size={16} className="text-amber-500 fill-amber-500" />
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Output</span>
-                        </div>
-                        <div className="flex gap-1">
-                            <button onClick={handleSpeak} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors">
-                                <Volume2 size={18} className={isSpeaking ? "animate-pulse" : ""} />
-                            </button>
-                            <button onClick={handleCopy} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 transition-colors">
-                                <Copy size={18} />
-                            </button>
-                            <button onClick={handleClear} className="p-2 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors">
-                                <Eraser size={18} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 p-6 flex flex-col justify-center items-center text-center overflow-y-auto">
-                        {history.length === 0 ? (
-                            <div className="opacity-30 flex flex-col items-center gap-2">
-                                <MessageSquareText size={48} strokeWidth={1} />
-                                <p className="text-xs font-bold">Menunggu input...</p>
-                            </div>
-                        ) : (
-                            <p className="text-3xl lg:text-5xl font-black text-slate-900 leading-tight break-words animate-in zoom-in-95">
-                                {getFullText()}
-                                <span className="inline-block w-1.5 h-10 bg-indigo-500 ml-2 align-middle animate-pulse rounded-full"/>
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Tombol Kontrol Bawah */}
-                    {activeTab === 'alphabet' && (
-                        <div className="p-4 bg-slate-50 border-t border-slate-200 grid grid-cols-4 gap-2">
-                            <button 
-                                onClick={handleSpace}
-                                className="col-span-3 h-14 bg-white border-b-4 border-slate-200 active:border-b-0 active:translate-y-[2px] hover:border-indigo-200 rounded-xl text-slate-700 font-black text-xs flex items-center justify-center gap-2 transition-all shadow-sm uppercase tracking-widest"
-                            >
-                                <Space size={16} /> SPASI
-                            </button>
-                            <button 
-                                onClick={handleDeleteLast}
-                                className="col-span-1 h-14 bg-white border-b-4 border-rose-100 active:border-b-0 active:translate-y-[2px] hover:bg-rose-50 hover:border-rose-200 rounded-xl text-rose-500 flex items-center justify-center transition-all shadow-sm"
-                            >
-                                <Delete size={20} />
-                            </button>
-                        </div>
-                    )}
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles size={16} className="text-amber-500 fill-amber-500" />
+                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Hasil Terjemahan</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={handleSpeak} disabled={history.length === 0} className="p-2 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors disabled:opacity-30" title="Baca Suara">
+                            <Volume2 size={18} className={isSpeaking ? "animate-pulse text-indigo-600" : ""} />
+                        </button>
+                        <button onClick={handleCopy} disabled={history.length === 0} className="p-2 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-lg transition-colors disabled:opacity-30" title="Salin Teks">
+                            <Copy size={18} />
+                        </button>
+                        <button onClick={handleClear} disabled={history.length === 0} className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors disabled:opacity-30" title="Hapus Semua">
+                            <Eraser size={18} />
+                        </button>
+                      </div>
                 </div>
 
-                {/* Log Mini (Scrollable Horizontal) */}
-                <div className="h-20 bg-slate-100 rounded-[1.5rem] border border-slate-200 flex items-center px-2 overflow-hidden shadow-inner">
+                <div className="p-6 md:p-8 min-h-[160px] flex flex-col justify-center items-center text-center relative">
                     {history.length === 0 ? (
-                        <p className="w-full text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">Riwayat Kosong</p>
+                        <div className="text-slate-300 flex flex-col items-center gap-3">
+                            <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center">
+                                <MessageSquareText size={32} strokeWidth={1.5} />
+                            </div>
+                            <p className="text-sm font-medium">
+                                Mulai gerakkan tangan di depan kamera...
+                            </p>
+                        </div>
                     ) : (
-                        <div ref={scrollRef} className="flex gap-2 overflow-x-auto w-full px-2 no-scrollbar scroll-smooth h-full items-center">
-                            {history.map((item, index) => (
-                                <div key={index} className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold shadow-sm bg-white border border-slate-200 text-slate-700`}>
-                                    {item === " " ? "␣" : item}
-                                </div>
-                            ))}
+                        <div className="w-full">
+                            <p className="text-3xl md:text-4xl font-black text-slate-800 leading-tight tracking-tight break-words animate-in fade-in slide-in-from-bottom-2">
+                                {getFullText()}
+                                <span className="inline-block w-1 h-8 bg-indigo-500 ml-1 align-middle animate-pulse rounded-full"/>
+                            </p>
                         </div>
                     )}
                 </div>
 
+                {activeTab === 'alphabet' && (
+                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-center gap-3">
+                        <button 
+                            onClick={handleSpace}
+                            className="flex-1 max-w-[200px] h-12 bg-white border-b-4 border-slate-200 active:border-b-0 active:translate-y-[4px] hover:bg-slate-50 rounded-xl text-slate-600 font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm"
+                        >
+                            <Space size={16} /> Spasi
+                        </button>
+                        <button 
+                            onClick={handleDeleteLast}
+                            disabled={history.length === 0}
+                            className="w-16 h-12 bg-white border-b-4 border-rose-100 active:border-b-0 active:translate-y-[4px] hover:bg-rose-50 rounded-xl text-rose-500 flex items-center justify-center transition-all shadow-sm disabled:opacity-50 disabled:active:translate-y-0 disabled:active:border-b-4"
+                        >
+                            <Delete size={20} />
+                        </button>
+                    </div>
+                )}
             </div>
+
+            {history.length > 0 && (
+                <div className="animate-in slide-in-from-bottom-4 duration-700 delay-100">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-3 px-4">Log Deteksi</p>
+                    <div 
+                        ref={scrollRef}
+                        className="flex items-center gap-2 overflow-x-auto px-1 pb-4 no-scrollbar scroll-smooth"
+                    >
+                        {history.map((item, index) => (
+                            <div 
+                                key={index}
+                                className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold shadow-sm border animate-in zoom-in-50 duration-300 ${
+                                    item === " " 
+                                    ? "bg-slate-200 text-slate-500 w-12 text-center" 
+                                    : activeTab === 'word' 
+                                      ? "bg-cyan-50 border-cyan-100 text-cyan-700"
+                                      : "bg-indigo-50 border-indigo-100 text-indigo-700"
+                                }`}
+                            >
+                                {item === " " ? "␣" : item}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
         </main>
       </div>
