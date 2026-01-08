@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
-import { Camera, CameraOff, Check, Loader2, RefreshCw, Trophy } from "lucide-react";
+import { CameraOff, Loader2, Trophy, ArrowLeft, RefreshCw, Sparkles } from "lucide-react";
 
 // --- KONFIGURASI ---
 const MODEL_URL = 'https://storage.googleapis.com/model-bisindo-v1-lisan/model.json';
@@ -14,31 +14,43 @@ const LABELS = [
   'U', 'V', 'W', 'X', 'Y', 'Z'
 ];
 
-export default function BisindoGameLevel() {
+interface GestureTestProps {
+  item: {
+    id: string;
+    title: string; // Misal item.title adalah "A", "B", dsb.
+    item_type: string;
+  };
+  onFinish: () => Promise<void>;
+  isFinishing: boolean;
+  onClose: () => void;
+}
+
+export default function GestureTestView({ item, onFinish, isFinishing, onClose }: GestureTestProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDetectingRef = useRef(false);
+  const requestRef = useRef<number | null>(null);
 
-  // State Game
-  const [targetChar, setTargetChar] = useState('C'); // Target huruf saat ini
+  // State
   const [loading, setLoading] = useState(true);
   const [model, setModel] = useState<tf.GraphModel | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   
   // State Validasi
-  const [isMatch, setIsMatch] = useState(false);       // Huruf benar?
-  const [isInZone, setIsInZone] = useState(false);     // Posisi pas di kotak?
-  const [isValidated, setIsValidated] = useState(false); // Siap tekan tombol?
+  const [isMatch, setIsMatch] = useState(false);
+  const [isInZone, setIsInZone] = useState(false);
+  const [isValidated, setIsValidated] = useState(false);
 
   // 1. Load Model
   useEffect(() => {
     const initTF = async () => {
       try {
+        setLoading(true);
         await tf.setBackend('webgl');
         await tf.ready();
         const loadedModel = await tf.loadGraphModel(MODEL_URL);
         
-        // Warmup
+        // Warmup model
         const dummy = tf.zeros([1, 640, 640, 3]);
         const res = loadedModel.execute(dummy) as tf.Tensor;
         tf.dispose([dummy, res]);
@@ -50,6 +62,10 @@ export default function BisindoGameLevel() {
       }
     };
     initTF();
+
+    return () => {
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
   }, []);
 
   // 2. Start Camera
@@ -64,39 +80,31 @@ export default function BisindoGameLevel() {
         videoRef.current.onloadedmetadata = () => {
           videoRef.current!.play();
           setCameraActive(true);
-          detectFrame();
         };
       }
     } catch (err) {
-      alert("Kamera error/tidak diizinkan");
+      alert("Akses kamera ditolak atau tidak didukung.");
     }
   };
 
-  // 3. Loop Deteksi & Logika Area
-  const detectFrame = async () => {
+  // 3. Deteksi Frame (Logic YOLOv8)
+  const detectFrame = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !model || !cameraActive) return;
-    if (isDetectingRef.current) {
-        requestAnimationFrame(detectFrame);
-        return;
-    }
 
-    isDetectingRef.current = true;
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Samakan ukuran canvas dengan video
-    if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+    // Sinkronisasi ukuran
+    if (canvas.width !== video.videoWidth) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
     }
 
-    // --- DEFINISI AREA TARGET (KOTAK BAWAH TENGAH) ---
-    // Area: Mulai dari 25% lebar (kiri), 40% tinggi (atas), lebar 50%, tinggi 50%
+    // Area Target
     const zoneX = canvas.width * 0.25; 
-    const zoneY = canvas.height * 0.40; 
+    const zoneY = canvas.height * 0.35; 
     const zoneW = canvas.width * 0.50; 
     const zoneH = canvas.height * 0.55; 
 
@@ -104,12 +112,10 @@ export default function BisindoGameLevel() {
       const res = tf.tidy(() => {
         const img = tf.browser.fromPixels(video);
         const resized = tf.image.resizeNearestNeighbor(img, [640, 640]); 
-        const casted = resized.cast('int32');
-        const expanded = casted.expandDims(0);
+        const expanded = resized.expandDims(0);
         return model.execute(expanded.toFloat().div(tf.scalar(255))) as tf.Tensor;
       });
 
-      // Proses Tensor (YOLO logic standar)
       const trans = res.transpose([0, 2, 1]);
       const boxes = tf.tidy(() => {
         const w = trans.slice([0, 0, 2], [-1, -1, 1]);
@@ -124,209 +130,150 @@ export default function BisindoGameLevel() {
         return [rawScores.max(1), rawScores.argMax(1)];
       });
 
-      const nms = await tf.image.nonMaxSuppressionAsync(
-        boxes as tf.Tensor2D, scores as tf.Tensor1D, 
-        5, 0.45, THRESHOLD // Ambil max 5 deteksi
-      );
-
-      const [boxesData, scoresData, classesData, nmsIndices] = await Promise.all([
-        boxes.data(), scores.data(), classes.data(), nms.data()
-      ]);
+      const nms = await tf.image.nonMaxSuppressionAsync(boxes as tf.Tensor2D, scores as tf.Tensor1D, 5, 0.45, THRESHOLD);
+      const [boxesData, scoresData, classesData, nmsIndices] = await Promise.all([boxes.data(), scores.data(), classes.data(), nms.data()]);
 
       tf.dispose([res, trans, boxes, scores, classes, nms]);
 
-      // --- RENDERING CANVAS ---
+      // Draw UI
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const scaleX = canvas.width / 640;
       const scaleY = canvas.height / 640;
 
-      // 1. Gambar KOTAK TARGET (Zona Area)
-      // Jika tangan masuk zona -> garis jadi solid & tebal
-      ctx.beginPath();
+      // Draw Zone
       ctx.lineWidth = 4;
-      ctx.strokeStyle = '#FFFFFF'; // Warna default putih
-      if (isValidated) ctx.strokeStyle = '#00FF00'; // Hijau jika sukses semua
-      
-      ctx.setLineDash([15, 10]); // Garis putus-putus
+      ctx.strokeStyle = isValidated ? '#22c55e' : 'rgba(255,255,255,0.5)';
+      ctx.setLineDash([10, 10]);
       ctx.strokeRect(zoneX, zoneY, zoneW, zoneH);
-      ctx.setLineDash([]); // Reset garis
+      ctx.setLineDash([]);
 
-      // Label Zona
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(zoneX, zoneY - 30, 140, 30);
-      ctx.fillStyle = '#FFF';
-      ctx.font = '14px Arial';
-      ctx.fillText("AREA TARGET", zoneX + 10, zoneY - 10);
-
-      // Reset Flag Frame Ini
       let frameMatch = false;
       let frameInZone = false;
 
-      // 2. Gambar Deteksi Tangan
       for (let i = 0; i < nmsIndices.length; i++) {
         const idx = nmsIndices[i];
         const [y1, x1, y2, x2] = boxesData.slice(idx * 4, (idx + 1) * 4);
         const label = LABELS[classesData[idx]];
         
-        // Konversi Koordinat (Mirror X)
         const _w = (x2 - x1) * scaleX;
         const _h = (y2 - y1) * scaleY;
-        const _x = canvas.width - (x2 * scaleX); // Flip X agar seperti cermin
+        const _x = canvas.width - (x2 * scaleX); // Mirror
         const _y = y1 * scaleY;
 
-        // Hitung Titik Tengah Kotak Tangan
         const centerX = _x + (_w / 2);
         const centerY = _y + (_h / 2);
 
-        // --- CEK LOGIKA ---
-        const isCorrectLabel = label === targetChar;
-        // Cek apakah titik tengah tangan ada di dalam Zona Area?
-        const isInside = centerX > zoneX && centerX < (zoneX + zoneW) &&
-                         centerY > zoneY && centerY < (zoneY + zoneH);
+        const isCorrect = label.toUpperCase() === item.title.toUpperCase();
+        const inZone = centerX > zoneX && centerX < (zoneX + zoneW) && centerY > zoneY && centerY < (zoneY + zoneH);
 
-        if (isCorrectLabel) frameMatch = true;
-        if (isInside) frameInZone = true;
+        if (isCorrect) frameMatch = true;
+        if (inZone) frameInZone = true;
 
-        // Warna Box Tangan
-        let boxColor = '#FF0000'; // Merah (Salah)
-        if (isCorrectLabel && !isInside) boxColor = '#FFA500'; // Orange (Huruf benar, posisi salah)
-        if (isCorrectLabel && isInside) boxColor = '#00FF00'; // Hijau (Benar semua)
-
-        // Gambar Box Tangan
-        ctx.beginPath();
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = boxColor;
-        ctx.rect(_x, _y, _w, _h);
-        ctx.stroke();
-
-        // Teks Label
-        ctx.fillStyle = boxColor;
-        ctx.font = 'bold 24px Arial';
-        ctx.fillText(`${label}`, _x, _y - 10);
+        ctx.strokeStyle = isCorrect && inZone ? '#22c55e' : (isCorrect ? '#f59e0b' : '#ef4444');
+        ctx.strokeRect(_x, _y, _w, _h);
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.font = 'bold 20px Inter';
+        ctx.fillText(`${label} ${(scoresData[idx] * 100).toFixed(0)}%`, _x, _y - 10);
       }
 
-      // Update State React (Hanya update jika berubah untuk performa)
       setIsMatch(frameMatch);
       setIsInZone(frameInZone);
       setIsValidated(frameMatch && frameInZone);
 
-    } catch (error) {
-      console.error(error);
-    } finally {
-      isDetectingRef.current = false;
-      if (cameraActive) requestAnimationFrame(detectFrame);
+    } catch (err) {
+      console.error(err);
     }
-  };
+    requestRef.current = requestAnimationFrame(detectFrame);
+  }, [model, cameraActive, item.title, isValidated]);
 
-  const handleNextLevel = () => {
-    // Random huruf baru
-    const randomChar = LABELS[Math.floor(Math.random() * LABELS.length)];
-    setTargetChar(randomChar);
-    setIsValidated(false);
-  };
+  useEffect(() => {
+    if (cameraActive) {
+        requestRef.current = requestAnimationFrame(detectFrame);
+    }
+    return () => {
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    };
+  }, [cameraActive, detectFrame]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-4">
-      
-      {/* HEADER */}
-      <div className="w-full max-w-6xl flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-500">
-            BISINDO CHALLENGE
-          </h1>
-          <p className="text-slate-400 text-sm">Sesuaikan gerakan dan posisi tangan</p>
-        </div>
+    <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col">
+      {/* Navbar Minimalis */}
+      <div className="p-4 flex items-center justify-between border-b border-slate-800 bg-slate-900/50 backdrop-blur-md">
+         <button onClick={onClose} className="p-2 text-slate-400 hover:text-white transition-colors">
+            <ArrowLeft size={24} />
+         </button>
+         <div className="text-center">
+            <h2 className="text-sm font-black text-indigo-400 uppercase tracking-widest">Praktik Isyarat</h2>
+            <p className="text-xs text-slate-500 font-bold">Huruf {item.title}</p>
+         </div>
+         <div className="w-10" />
+      </div>
+
+      <main className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
         
-        {/* Indikator Status */}
-        <div className="flex gap-2">
-            <div className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${isMatch ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
-                1. GERAKAN: {isMatch ? "OK" : "..."}
-            </div>
-            <div className={`px-4 py-2 rounded-lg text-xs font-bold border transition-colors ${isInZone ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
-                2. POSISI: {isInZone ? "PAS" : "..."}
-            </div>
-        </div>
-      </div>
-
-      {/* SPLIT VIEW UTAMA */}
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-8">
-        
-        {/* KIRI: TARGET (STATIC) */}
-        <div className="relative aspect-square md:aspect-auto md:h-[500px] bg-white rounded-3xl flex flex-col items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)] overflow-hidden">
-             {/* Hiasan Background */}
-            <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-black to-transparent" />
-            
-            <p className="text-slate-400 font-bold tracking-widest uppercase mb-4 z-10">Target Kamu</p>
-            <span className="text-[12rem] md:text-[15rem] font-black text-slate-900 leading-none z-10">
-                {targetChar}
-            </span>
-            <div className="mt-8 px-6 py-2 bg-slate-100 rounded-full text-slate-600 font-medium text-sm z-10">
-                Tiru huruf ini dengan tangan kanan
-            </div>
-        </div>
-
-        {/* KANAN: KAMERA (LIVE) */}
-        <div className="relative aspect-square md:aspect-auto md:h-[500px] bg-black rounded-3xl overflow-hidden border-4 border-slate-800 shadow-2xl">
-            {/* Loading Overlay */}
-            {loading && (
-                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900">
-                    <Loader2 className="w-12 h-12 text-green-500 animate-spin mb-4" />
-                    <p className="text-green-500 font-mono">Memuat Neural Network...</p>
+        {/* Kiri: Instruksi */}
+        <div className="flex-1 bg-white rounded-[2.5rem] flex flex-col items-center justify-center p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5"><Sparkles size={120} /></div>
+            <p className="text-slate-400 font-black uppercase tracking-[0.2em] mb-2 text-xs">Target Peragaan</p>
+            <h1 className="text-[12rem] font-black text-slate-900 leading-none mb-8">{item.title}</h1>
+            <div className="flex gap-2">
+                <div className={`px-4 py-2 rounded-xl text-[10px] font-black border transition-all ${isMatch ? 'bg-green-50 border-green-200 text-green-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                    1. GERAKAN: {isMatch ? "✓" : "..."}
                 </div>
-            )}
-
-            {/* Video & Canvas */}
-            {!cameraActive ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-                    <CameraOff size={48} className="mb-4 opacity-50" />
-                    <button 
-                        onClick={startCamera} 
-                        disabled={loading}
-                        className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-full font-bold transition-all active:scale-95 disabled:opacity-50"
-                    >
-                        Mulai Kamera
-                    </button>
+                <div className={`px-4 py-2 rounded-xl text-[10px] font-black border transition-all ${isInZone ? 'bg-green-50 border-green-200 text-green-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                    2. POSISI: {isInZone ? "✓" : "..."}
                 </div>
-            ) : (
-                <>
-                    <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]" muted playsInline />
-                    <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
-                    
-                    {/* Feedback Overlay jika BENAR */}
-                    {isValidated && (
-                        <div className="absolute inset-0 border-[10px] border-green-500 animate-pulse pointer-events-none" />
-                    )}
-                </>
-            )}
+            </div>
         </div>
-      </div>
 
-      {/* FOOTER ACTION */}
-      <div className="w-full max-w-md">
-        <button
-            onClick={handleNextLevel}
-            disabled={!isValidated}
-            className={`
-                w-full py-4 rounded-2xl font-black text-lg tracking-wide flex items-center justify-center gap-3 transition-all duration-300
-                ${isValidated 
-                    ? 'bg-green-500 hover:bg-green-400 text-black shadow-[0_0_30px_rgba(34,197,94,0.6)] scale-105 cursor-pointer' 
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed grayscale'
-                }
-            `}
-        >
-            {isValidated ? (
-                <>
-                    <Trophy size={24} /> BENAR! LANJUT LEVEL BERIKUTNYA
-                </>
+        {/* Kanan: Kamera Area */}
+        <div className="flex-[1.2] relative bg-black rounded-[2.5rem] overflow-hidden border-4 border-slate-800 shadow-inner">
+           {loading && (
+             <div className="absolute inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center">
+                <Loader2 className="animate-spin text-indigo-500 mb-4" size={40} />
+                <p className="text-xs font-black text-indigo-500 tracking-widest uppercase">Initializing AI...</p>
+             </div>
+           )}
+
+           {!cameraActive ? (
+             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600 gap-6">
+                <CameraOff size={64} strokeWidth={1} />
+                <button onClick={startCamera} className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-900/40 hover:bg-indigo-500 active:scale-95 transition-all">
+                    AKTIFKAN KAMERA
+                </button>
+             </div>
+           ) : (
+             <>
+                <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover scale-x-[-1]" muted playsInline />
+                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
+                {isValidated && (
+                    <div className="absolute inset-0 border-[12px] border-green-500/50 animate-pulse pointer-events-none" />
+                )}
+             </>
+           )}
+        </div>
+      </main>
+
+      {/* Footer Action */}
+      <div className="p-6 bg-slate-900/80 border-t border-slate-800">
+         <button
+            onClick={onFinish}
+            disabled={!isValidated || isFinishing}
+            className={`w-full max-w-2xl mx-auto py-5 rounded-[2rem] font-black text-sm tracking-[0.2em] flex items-center justify-center gap-3 transition-all ${
+                isValidated 
+                ? 'bg-green-500 text-slate-900 shadow-[0_0_40px_rgba(34,197,94,0.4)] hover:scale-[1.02] active:scale-95' 
+                : 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed'
+            }`}
+         >
+            {isFinishing ? (
+                <Loader2 className="animate-spin" />
+            ) : isValidated ? (
+                <><Trophy size={20} /> SELESAIKAN TANTANGAN</>
             ) : (
-                <>
-                    <RefreshCw size={20} className={isValidated ? "" : "opacity-0"} /> 
-                    {isMatch && !isInZone ? "MASUKKAN KE KOTAK!" : "PERAGAKAN HURUF " + targetChar}
-                </>
+                <><RefreshCw size={18} /> {isMatch ? "MASUKKAN KE AREA KOTAK" : `PERAGAKAN HURUF ${item.title}`}</>
             )}
-        </button>
+         </button>
       </div>
-
     </div>
   );
 }

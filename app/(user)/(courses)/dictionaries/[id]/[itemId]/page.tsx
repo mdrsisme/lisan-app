@@ -76,7 +76,6 @@ export default function ItemDetailScreen({ params }: { params: Promise<{ id: str
       <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col pb-20 md:pb-0">
 
           <div className="flex-1 relative">
-              {/* Render View Berdasarkan Tipe Item dari Database */}
               {item.item_type === 'gesture_test' ? (
                   <GestureTestView 
                       item={item} 
@@ -87,7 +86,6 @@ export default function ItemDetailScreen({ params }: { params: Promise<{ id: str
               ) : (
                   <FlashcardView 
                       item={item} 
-                      // Untuk flashcard, tombol praktik opsional (bisa dihilangkan atau redirect)
                       onStartPractice={() => alert("Fitur praktik hanya untuk tipe Gesture Test")} 
                       onFinish={handleFinish} 
                       isFinishing={isFinishing} 
