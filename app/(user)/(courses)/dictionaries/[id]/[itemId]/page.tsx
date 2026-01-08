@@ -44,7 +44,7 @@ export default function ItemDetailScreen({ params }: { params: Promise<{ id: str
         
         await api.post('/learning/submit', {
             dictionary_item_id: itemId,
-            quiz_type: item.item_type, // Menggunakan tipe asli dari item
+            quiz_type: item.item_type,
             is_correct: true 
         });
 
