@@ -46,7 +46,6 @@ const menuGroups = [
     theme: themeColors.solar,
     items: [
       { name: "Dictionary", href: "/admin/dictionaries", icon: BookOpen }, 
-      { name: "Model AI", href: "/admin/ai-models", icon: BrainCircuit }, 
     ],
   },
   {

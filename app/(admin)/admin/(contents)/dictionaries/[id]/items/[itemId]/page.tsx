@@ -206,17 +206,6 @@ export default function EditDictionaryItemPage({ params }: { params: Promise<{ i
             </button>
         </div>
 
-        {/* Title Section */}
-        <div className="flex items-center gap-4 mb-10">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl text-white shadow-xl shadow-indigo-200 flex items-center justify-center transform -rotate-3">
-                <FileText size={32} />
-            </div>
-            <div>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight">Edit Materi</h1>
-                <p className="text-slate-500 font-medium mt-1">Kelola konten pembelajaran dan integrasi AI.</p>
-            </div>
-        </div>
-
         {/* Alert Messages */}
         {error && (
             <div className="mb-8 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600 text-sm font-bold shadow-sm animate-in fade-in slide-in-from-top-2">
@@ -319,122 +308,7 @@ export default function EditDictionaryItemPage({ params }: { params: Promise<{ i
                     </div>
                 </div>
             </div>
-
-            {/* COLUMN 2: AI CONFIGURATION (1/3 width) */}
-            <div className="xl:col-span-1 space-y-8">
-                
-                <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-900/20 relative overflow-hidden text-white">
-                    {/* Background Effects */}
-                    <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-indigo-500/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                    
-                    <h3 className="text-lg font-black mb-6 flex items-center gap-2 relative z-10">
-                        <BrainCircuit size={20} className="text-indigo-400" /> Integrasi AI
-                    </h3>
-
-                    <div className="space-y-6 relative z-10">
-                        
-                        {/* AI Model Selector */}
-                        <div className="space-y-2">
-                            <label className="text-xs font-extrabold text-slate-400 uppercase tracking-widest ml-1">Pilih Model AI</label>
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <select 
-                                        className="w-full px-4 py-3.5 bg-white/10 border border-white/10 focus:border-indigo-500 focus:bg-slate-800 rounded-xl font-bold text-white transition-all outline-none appearance-none cursor-pointer text-sm"
-                                        value={formData.ai_model_id}
-                                        onChange={e => setFormData({...formData, ai_model_id: e.target.value})}
-                                    >
-                                        <option value="" className="bg-slate-900">-- Non-AI --</option>
-                                        {aiModels.map((model) => (
-                                            <option key={model.id} value={model.id} className="bg-slate-900">
-                                                {model.name || `Model: ${model.id.substring(0,6)}...`}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ScanFace className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                                </div>
-                                <button 
-                                    type="button"
-                                    onClick={() => setShowCreateModel(true)}
-                                    className="p-3.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white transition-colors shadow-lg shadow-indigo-500/20"
-                                    title="Buat Model Baru"
-                                >
-                                    <Plus size={20} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* JSON Editor */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-xs font-extrabold text-slate-400 uppercase tracking-widest ml-1">Target Data (JSON)</label>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isJsonValid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                                    {isJsonValid ? "Valid JSON" : "Invalid JSON"}
-                                </span>
-                            </div>
-                            <textarea 
-                                rows={10}
-                                className={`w-full px-4 py-4 bg-black/30 font-mono text-xs rounded-2xl border-2 outline-none resize-none transition-all ${isJsonValid ? 'border-transparent focus:border-indigo-500' : 'border-rose-500/50 focus:border-rose-500'}`}
-                                placeholder='{"landmarks": ...}'
-                                value={formData.target_gesture_data}
-                                onChange={e => handleJsonChange(e.target.value)}
-                            />
-                            <p className="text-[10px] text-slate-400 leading-relaxed px-1">
-                                Koordinat referensi untuk validasi gerakan. Format harus JSON valid.
-                            </p>
-                        </div>
-
-                        {/* Save Button Sticky on Mobile / Bottom on Desktop */}
-                        <button 
-                            type="submit" 
-                            disabled={isSaving || !isJsonValid}
-                            className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black text-lg hover:bg-indigo-50 hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100 mt-4"
-                        >
-                            {isSaving ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-                            {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
-                        </button>
-                    </div>
-                </div>
-
-            </div>
         </form>
-
-        {/* --- MODAL CREATE AI MODEL --- */}
-        {showCreateModel && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                <div className="bg-white w-full max-w-md p-6 rounded-[2rem] shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
-                    <button 
-                        onClick={() => setShowCreateModel(false)}
-                        className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
-                    >
-                        <X size={20} />
-                    </button>
-                    
-                    <h3 className="text-xl font-black text-slate-800 mb-1">Tambah Model AI</h3>
-                    <p className="text-slate-500 text-sm mb-6">Masukkan URL endpoint model baru.</p>
-                    
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase">Model URL</label>
-                            <input 
-                                type="text"
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition-all font-medium text-sm"
-                                placeholder="https://models.example.com/handpose/v1"
-                                value={newModelUrl}
-                                onChange={e => setNewModelUrl(e.target.value)}
-                            />
-                        </div>
-                        <button 
-                            onClick={handleCreateAiModel}
-                            disabled={isCreatingModel || !newModelUrl}
-                            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
-                        >
-                            {isCreatingModel ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                            Buat Model
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
 
       </div>
     </AdminLayout>
