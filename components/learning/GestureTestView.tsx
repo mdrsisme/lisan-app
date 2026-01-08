@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
-import { CameraOff, Loader2, Trophy, ArrowLeft, RefreshCw, Sparkles } from "lucide-react";
+import { CameraOff, Loader2, Trophy, ArrowLeft, RefreshCw, Sparkles, Image as ImageIcon } from "lucide-react";
 
 // --- KONFIGURASI ---
 const MODEL_URL = 'https://storage.googleapis.com/model-bisindo-v1-lisan/model.json';
@@ -17,8 +17,9 @@ const LABELS = [
 interface GestureTestProps {
   item: {
     id: string;
-    title: string; // Misal item.title adalah "A", "B", dsb.
+    title: string;
     item_type: string;
+    image_url?: string | null; // URL gambar tutorial dari database
   };
   onFinish: () => Promise<void>;
   isFinishing: boolean;
@@ -28,7 +29,6 @@ interface GestureTestProps {
 export default function GestureTestView({ item, onFinish, isFinishing, onClose }: GestureTestProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const isDetectingRef = useRef(false);
   const requestRef = useRef<number | null>(null);
 
   // State
@@ -50,7 +50,6 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
         await tf.ready();
         const loadedModel = await tf.loadGraphModel(MODEL_URL);
         
-        // Warmup model
         const dummy = tf.zeros([1, 640, 640, 3]);
         const res = loadedModel.execute(dummy) as tf.Tensor;
         tf.dispose([dummy, res]);
@@ -83,11 +82,11 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
         };
       }
     } catch (err) {
-      alert("Akses kamera ditolak atau tidak didukung.");
+      alert("Akses kamera ditolak.");
     }
   };
 
-  // 3. Deteksi Frame (Logic YOLOv8)
+  // 3. Deteksi Frame
   const detectFrame = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !model || !cameraActive) return;
 
@@ -96,13 +95,11 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Sinkronisasi ukuran
     if (canvas.width !== video.videoWidth) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
     }
 
-    // Area Target
     const zoneX = canvas.width * 0.25; 
     const zoneY = canvas.height * 0.35; 
     const zoneW = canvas.width * 0.50; 
@@ -135,12 +132,10 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
 
       tf.dispose([res, trans, boxes, scores, classes, nms]);
 
-      // Draw UI
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const scaleX = canvas.width / 640;
       const scaleY = canvas.height / 640;
 
-      // Draw Zone
       ctx.lineWidth = 4;
       ctx.strokeStyle = isValidated ? '#22c55e' : 'rgba(255,255,255,0.5)';
       ctx.setLineDash([10, 10]);
@@ -157,7 +152,7 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
         
         const _w = (x2 - x1) * scaleX;
         const _h = (y2 - y1) * scaleY;
-        const _x = canvas.width - (x2 * scaleX); // Mirror
+        const _x = canvas.width - (x2 * scaleX); 
         const _y = y1 * scaleY;
 
         const centerX = _x + (_w / 2);
@@ -171,9 +166,6 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
 
         ctx.strokeStyle = isCorrect && inZone ? '#22c55e' : (isCorrect ? '#f59e0b' : '#ef4444');
         ctx.strokeRect(_x, _y, _w, _h);
-        ctx.fillStyle = ctx.strokeStyle;
-        ctx.font = 'bold 20px Inter';
-        ctx.fillText(`${label} ${(scoresData[idx] * 100).toFixed(0)}%`, _x, _y - 10);
       }
 
       setIsMatch(frameMatch);
@@ -187,67 +179,92 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
   }, [model, cameraActive, item.title, isValidated]);
 
   useEffect(() => {
-    if (cameraActive) {
-        requestRef.current = requestAnimationFrame(detectFrame);
-    }
-    return () => {
-        if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    };
+    if (cameraActive) requestRef.current = requestAnimationFrame(detectFrame);
+    return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
   }, [cameraActive, detectFrame]);
 
   return (
     <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col">
-      {/* Navbar Minimalis */}
-      <div className="p-4 flex items-center justify-between border-b border-slate-800 bg-slate-900/50 backdrop-blur-md">
+      <div className="p-4 flex items-center justify-between border-b border-slate-800 bg-slate-900/50 backdrop-blur-md text-white">
          <button onClick={onClose} className="p-2 text-slate-400 hover:text-white transition-colors">
             <ArrowLeft size={24} />
          </button>
          <div className="text-center">
-            <h2 className="text-sm font-black text-indigo-400 uppercase tracking-widest">Praktik Isyarat</h2>
-            <p className="text-xs text-slate-500 font-bold">Huruf {item.title}</p>
+            <h2 className="text-sm font-black text-indigo-400 uppercase tracking-widest leading-none mb-1">Gesture Challenge</h2>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Level: {item.title}</p>
          </div>
          <div className="w-10" />
       </div>
 
-      <main className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
+      <main className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden bg-slate-950">
         
-        {/* Kiri: Instruksi */}
-        <div className="flex-1 bg-white rounded-[2.5rem] flex flex-col items-center justify-center p-8 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5"><Sparkles size={120} /></div>
-            <p className="text-slate-400 font-black uppercase tracking-[0.2em] mb-2 text-xs">Target Peragaan</p>
-            <h1 className="text-[12rem] font-black text-slate-900 leading-none mb-8">{item.title}</h1>
-            <div className="flex gap-2">
-                <div className={`px-4 py-2 rounded-xl text-[10px] font-black border transition-all ${isMatch ? 'bg-green-50 border-green-200 text-green-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
-                    1. GERAKAN: {isMatch ? "✓" : "..."}
-                </div>
-                <div className={`px-4 py-2 rounded-xl text-[10px] font-black border transition-all ${isInZone ? 'bg-green-50 border-green-200 text-green-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
-                    2. POSISI: {isInZone ? "✓" : "..."}
+        {/* Kiri: Instruksi & TARGET GESTURE DATA */}
+        <div className="flex-1 bg-white rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl relative">
+            <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none"><Sparkles size={120} /></div>
+            
+            {/* Header Box */}
+            <div className="p-6 text-center border-b border-slate-100 bg-slate-50/50">
+                <p className="text-slate-400 font-black uppercase tracking-[0.2em] mb-1 text-[10px]">Tiru Isyarat Berikut</p>
+                <h1 className="text-5xl font-black text-slate-900 leading-none">{item.title}</h1>
+            </div>
+
+            {/* Target Gesture Data (Image) */}
+            <div className="flex-1 flex items-center justify-center p-8 relative">
+                {item.image_url ? (
+                    <img 
+                      src={item.image_url} 
+                      alt={`Gesture ${item.title}`}
+                      className="max-w-full max-h-full object-contain drop-shadow-2xl rounded-2xl animate-in fade-in zoom-in-95 duration-700" 
+                    />
+                ) : (
+                    <div className="flex flex-col items-center text-slate-200">
+                        <ImageIcon size={100} strokeWidth={1} />
+                        <p className="text-xs font-bold mt-4 uppercase tracking-widest text-slate-400">No Image Available</p>
+                    </div>
+                )}
+                
+                {/* Indikator terapung */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                    <div className={`px-4 py-2 rounded-xl text-[10px] font-black border shadow-sm transition-all ${isMatch ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-slate-200 text-slate-300'}`}>
+                        GERAKAN {isMatch ? "✓" : "..."}
+                    </div>
+                    <div className={`px-4 py-2 rounded-xl text-[10px] font-black border shadow-sm transition-all ${isInZone ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-slate-200 text-slate-300'}`}>
+                        POSISI {isInZone ? "✓" : "..."}
+                    </div>
                 </div>
             </div>
         </div>
 
         {/* Kanan: Kamera Area */}
-        <div className="flex-[1.2] relative bg-black rounded-[2.5rem] overflow-hidden border-4 border-slate-800 shadow-inner">
+        <div className="flex-[1.2] relative bg-slate-900 rounded-[2.5rem] overflow-hidden border-4 border-slate-800 shadow-inner">
            {loading && (
              <div className="absolute inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center">
                 <Loader2 className="animate-spin text-indigo-500 mb-4" size={40} />
-                <p className="text-xs font-black text-indigo-500 tracking-widest uppercase">Initializing AI...</p>
+                <p className="text-xs font-black text-indigo-500 tracking-widest uppercase">Initializing AI Core...</p>
              </div>
            )}
 
            {!cameraActive ? (
              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600 gap-6">
-                <CameraOff size={64} strokeWidth={1} />
-                <button onClick={startCamera} className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-900/40 hover:bg-indigo-500 active:scale-95 transition-all">
-                    AKTIFKAN KAMERA
+                <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center">
+                    <CameraOff size={40} strokeWidth={1.5} />
+                </div>
+                <button onClick={startCamera} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm shadow-[0_10px_30px_rgba(79,70,229,0.4)] hover:bg-indigo-500 active:scale-95 transition-all uppercase tracking-widest">
+                    Mulai Kamera
                 </button>
              </div>
            ) : (
              <>
                 <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover scale-x-[-1]" muted playsInline />
-                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
+                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover scale-x-[-1]" />
                 {isValidated && (
-                    <div className="absolute inset-0 border-[12px] border-green-500/50 animate-pulse pointer-events-none" />
+                    <div className="absolute inset-0 border-[12px] border-green-500/40 animate-pulse pointer-events-none rounded-[2rem]" />
+                )}
+                {/* Area Box Putus-putus */}
+                {!isValidated && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-1/2 h-1/2 border-2 border-white/20 border-dashed rounded-3xl" />
+                    </div>
                 )}
              </>
            )}
@@ -255,22 +272,22 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
       </main>
 
       {/* Footer Action */}
-      <div className="p-6 bg-slate-900/80 border-t border-slate-800">
+      <div className="p-6 bg-slate-900 border-t border-slate-800">
          <button
             onClick={onFinish}
             disabled={!isValidated || isFinishing}
-            className={`w-full max-w-2xl mx-auto py-5 rounded-[2rem] font-black text-sm tracking-[0.2em] flex items-center justify-center gap-3 transition-all ${
+            className={`w-full max-w-2xl mx-auto py-5 rounded-[2rem] font-black text-xs tracking-[0.3em] uppercase flex items-center justify-center gap-3 transition-all ${
                 isValidated 
-                ? 'bg-green-500 text-slate-900 shadow-[0_0_40px_rgba(34,197,94,0.4)] hover:scale-[1.02] active:scale-95' 
-                : 'bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed'
+                ? 'bg-green-500 text-slate-900 shadow-[0_0_50px_rgba(34,197,94,0.3)] hover:scale-[1.02] active:scale-95' 
+                : 'bg-slate-800 text-slate-600 cursor-not-allowed'
             }`}
          >
             {isFinishing ? (
                 <Loader2 className="animate-spin" />
             ) : isValidated ? (
-                <><Trophy size={20} /> SELESAIKAN TANTANGAN</>
+                <><Trophy size={18} /> SELESAIKAN TANTANGAN</>
             ) : (
-                <><RefreshCw size={18} /> {isMatch ? "MASUKKAN KE AREA KOTAK" : `PERAGAKAN HURUF ${item.title}`}</>
+                <><RefreshCw size={16} /> {isMatch ? "MASUKKAN TANGAN KE KOTAK" : `PERAGAKAN HURUF ${item.title}`}</>
             )}
          </button>
       </div>
