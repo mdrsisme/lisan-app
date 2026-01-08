@@ -10,8 +10,8 @@ import {
   LogOut, 
   ArrowLeftRight,
   LayoutGrid,
-  Library, // Digunakan untuk Kumpulan Kamus
-  BookOpen, // Ikon baru untuk Kamus
+  Library,
+  BookOpen,
   User,
   ShieldCheck,
   ChevronRight,
@@ -74,6 +74,7 @@ export default function UserNavbar() {
     { href: "/dashboard", label: "Beranda", icon: LayoutGrid },
     { href: "/dictionaries", label: "Kamus", icon: BookOpen },
     { href: "/live", label: "Live Translation", icon: Languages },
+    { href: "/live-translation", label: "Live Translation Testing", icon: Languages },
   ];
 
   const UserAvatar = ({ className, size = "sm" }: { className?: string, size?: "sm" | "lg" }) => {
