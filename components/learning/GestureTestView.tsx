@@ -34,7 +34,12 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
   
   const [isMatch, setIsMatch] = useState(false);
   const [isInZone, setIsInZone] = useState(false);
-  const [isValidated, setIsValidated] = useState(false);
+  
+  // REAL-TIME VALIDATION (Untuk efek visual kamera saat ini)
+  const [isValidated, setIsValidated] = useState(false); 
+  
+  // PERSISTENT SUCCESS (Untuk mengunci tombol agar tetap hijau)
+  const [hasCompleted, setHasCompleted] = useState(false);
 
   // 1. Load Model & Auto Start Camera
   useEffect(() => {
@@ -174,7 +179,14 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
 
       setIsMatch(frameMatch);
       setIsInZone(frameInZone);
-      setIsValidated(frameMatch && frameInZone);
+      
+      const currentValidation = frameMatch && frameInZone;
+      setIsValidated(currentValidation); // Ini untuk efek visual real-time
+
+      // LOGIKA KUNCI: Jika sekali saja berhasil, tandai hasCompleted = true selamanya
+      if (currentValidation) {
+        setHasCompleted(true);
+      }
 
     } catch (err) { console.error(err); }
     requestRef.current = requestAnimationFrame(detectFrame);
@@ -233,11 +245,12 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
                         <HandTracker />
                     </div>
                 )}
+                {/* Efek visual jika sedang benar */}
                 {isValidated && <div className="absolute inset-0 bg-green-500/10 z-30 animate-pulse" />}
            </div>
         </div>
 
-        {/* ROW 2: TARGET SIMBOL (MEMANJANG DI BAWAH) */}
+        {/* ROW 2: TARGET SIMBOL & STATUS */}
         <div className="flex-[0.6] bg-white rounded-[2.5rem] border-4 border-slate-100 shadow-2xl flex flex-row items-center px-10 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none"><Sparkles size={80} /></div>
             
@@ -281,32 +294,49 @@ export default function GestureTestView({ item, onFinish, isFinishing, onClose }
 
       </main>
 
-      {/* Footer / Submit Progress */}
+      {/* FOOTER BUTTON - Logic diperbarui menggunakan hasCompleted */}
       <div className="p-6 bg-slate-900/60 backdrop-blur-md border-t border-white/5">
          <button
             onClick={onFinish}
-            disabled={!isValidated || isFinishing}
-            className={`w-full max-w-4xl mx-auto py-6 rounded-[2.5rem] font-black text-xs tracking-[0.4em] uppercase flex items-center justify-center gap-3 transition-all duration-500 shadow-2xl ${
-                isValidated 
-                ? 'bg-green-500 text-slate-950 shadow-green-500/40 scale-[1.02] hover:bg-green-400 active:scale-95' 
+            // Button HANYA disabled jika belum pernah berhasil (hasCompleted false) ATAU sedang loading
+            disabled={!hasCompleted || isFinishing}
+            className={`w-full max-w-4xl mx-auto py-6 rounded-[2.5rem] font-black text-xs tracking-[0.4em] uppercase flex items-center justify-center gap-3 transition-all duration-500 shadow-2xl relative overflow-hidden ${
+                hasCompleted 
+                ? 'bg-green-500 text-slate-950 shadow-green-500/40 scale-[1.02] hover:bg-green-400 active:scale-95 cursor-pointer' 
                 : 'bg-slate-800 text-slate-600 opacity-40 cursor-not-allowed'
             }`}
          >
             {isFinishing ? (
                 <div className="flex items-center gap-3">
                     <Loader2 className="animate-spin" size={20} />
-                    <span>Menyimpan Progress...</span>
+                    <span>MENYIMPAN PROGRESS...</span>
                 </div>
-            ) : isValidated ? (
-                <><Trophy size={20} className="animate-bounce" /> Berhasil! Selesaikan & Kembali</>
+            ) : hasCompleted ? (
+                // Tampilan jika SUDAH berhasil (bisa diklik kapan saja)
+                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2">
+                    <Trophy size={20} className="animate-bounce" /> 
+                    <span>TANTANGAN SELESAI - KLIK UNTUK KEMBALI</span>
+                </div>
             ) : (
+                // Tampilan jika BELUM berhasil
                 <div className="flex items-center gap-3">
                     <RefreshCw size={18} className="animate-spin" style={{ animationDuration: '3s' }} /> 
-                    <span>{isMatch ? "Tahan posisi di tengah..." : `Latih Huruf ${item.word}`}</span>
+                    <span>{isMatch ? "Tahan posisi di tengah..." : `Lakukan isyarat "${item.word}"`}</span>
                 </div>
+            )}
+            
+            {/* Efek Kilauan jika sudah berhasil */}
+            {hasCompleted && !isFinishing && (
+               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_2.5s_infinite] pointer-events-none" />
             )}
          </button>
       </div>
+
+      <style jsx>{`
+        @keyframes shimmer {
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 }
